@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"eljur/internal/domain/models"
 	"eljur/tests/suite"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -101,6 +102,49 @@ func TestSubjectStorage(t *testing.T) {
 
 }
 
-func TestGrades(t *testing.T) {
+func TestGradesStorage(t *testing.T) {
+	s, err := suite.GetStorage()
+	require.NoError(t, err)
+	grade := models.Grade{
+		UserId:    1,
+		SubjectId: 2,
+		Value:     4,
+		Day:       5,
+		Month:     1,
+		Course:    3,
+	}
+	id, err := s.Grades.NewGrade(grade)
+	require.NoError(t, err)
 
+	gradeR, err := s.Grades.GetGrade(id)
+	require.NoError(t, err)
+	grade.Id = id
+
+	assert.Equal(t, grade, *gradeR)
+
+	grades, err := s.Grades.GetByMonth(grade.Month)
+	assert.Equal(t, grade, *grades[0])
+
+	grades, err = s.Grades.GetByUser(grade.UserId)
+	assert.Equal(t, grade, *grades[0])
+
+	grade2 := models.Grade{
+		Id:        id,
+		UserId:    2,
+		SubjectId: 3,
+		Value:     5,
+		Day:       6,
+		Month:     2,
+		Course:    4,
+	}
+
+	err = s.Grades.Update(grade2)
+	require.NoError(t, err)
+
+	gradeR, err = s.Grades.GetGrade(grade2.Id)
+	require.NoError(t, err)
+	assert.Equal(t, grade2, *gradeR)
+
+	err = s.Grades.Delete(id)
+	require.NoError(t, err)
 }

@@ -17,6 +17,10 @@ type Users interface {
 type Grades interface {
 	NewGrade(grade models.Grade) error
 	GetGrade(id int) (*models.Grade, error)
+	GetByMonth(month int8) ([]*models.Grade, error)
+	GetByUser(userId int) ([]*models.Grade, error)
+	Update(grade models.Grade) error
+	Delete(id int) error
 }
 
 type Subjects interface {

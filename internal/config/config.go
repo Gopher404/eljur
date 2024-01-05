@@ -5,6 +5,7 @@ import "github.com/ilyakaznacheev/cleanenv"
 type Config struct {
 	Bind BindConfig `yaml:"bind"`
 	DB   DBConfig   `yaml:"DB"`
+	SSO  SSOConfig  `yaml:"SSO"`
 }
 
 type BindConfig struct {
@@ -18,6 +19,12 @@ type DBConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Schema   string `yaml:"schema"`
+}
+
+type SSOConfig struct {
+	Host   string `yaml:"host"`
+	Port   string `yaml:"port"`
+	AppKey string `yaml:"app_key"`
 }
 
 func GetConfig(path string) (*Config, error) {

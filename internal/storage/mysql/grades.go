@@ -69,7 +69,7 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		query += "course=? AND "
 		args = append(args, *opts.Course)
 	}
-	query = query[:len(query)-5] + ";" // убираем последнюю не нужную "AND"
+	query = query[:len(query)-5] + ";" // убираем последний не нужный "AND"
 
 	var grades []*models.Grade
 

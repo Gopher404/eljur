@@ -113,19 +113,26 @@ func TestGradesStorage(t *testing.T) {
 		Month:     1,
 		Course:    3,
 	}
+
 	id, err := s.Grades.NewGrade(grade)
 	require.NoError(t, err)
 
-	gradeR, err := s.Grades.GetGrade(id)
+	gradeR, err := s.Grades.Find(models.GradesFindOpts{Id: &id})
 	require.NoError(t, err)
 	grade.Id = id
 
-	assert.Equal(t, grade, *gradeR)
+	assert.Equal(t, grade, *gradeR[0])
 
-	grades, err := s.Grades.GetByMonth(grade.Month)
+	grades, err := s.Grades.Find(models.GradesFindOpts{
+		SubjectId: &grade.SubjectId,
+		Month:     &grade.Month,
+	})
 	assert.Equal(t, grade, *grades[0])
 
-	grades, err = s.Grades.GetByUser(grade.UserId)
+	grades, err = s.Grades.Find(models.GradesFindOpts{
+		UserId: &grade.UserId,
+		Month:  &grade.Month,
+	})
 	assert.Equal(t, grade, *grades[0])
 
 	grade2 := models.Grade{
@@ -141,9 +148,9 @@ func TestGradesStorage(t *testing.T) {
 	err = s.Grades.Update(grade2)
 	require.NoError(t, err)
 
-	gradeR, err = s.Grades.GetGrade(grade2.Id)
+	gradeR, err = s.Grades.Find(models.GradesFindOpts{Id: &grade2.Id})
 	require.NoError(t, err)
-	assert.Equal(t, grade2, *gradeR)
+	assert.Equal(t, grade2, *gradeR[0])
 
 	err = s.Grades.Delete(id)
 	require.NoError(t, err)

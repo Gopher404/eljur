@@ -16,9 +16,7 @@ type Users interface {
 
 type Grades interface {
 	NewGrade(grade models.Grade) (int, error)
-	GetGrade(id int) (*models.Grade, error)
-	GetByMonth(month int8) ([]*models.Grade, error)
-	GetByUser(userId int) ([]*models.Grade, error)
+	Find(opts models.GradesFindOpts) ([]*models.Grade, error)
 	Update(grade models.Grade) error
 	Delete(id int) error
 }

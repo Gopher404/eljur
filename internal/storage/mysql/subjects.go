@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"eljur/internal/domain/models"
+	"fmt"
 )
 
 type Subjects struct {
@@ -26,9 +27,22 @@ func (s *Subjects) GetById(id int) (string, error) {
 // return [subject1, subject2, ...]
 
 func (s *Subjects) GetAll() ([]*models.Subject, error) {
-	// todo
+	const op = "mysql.GetAll"
+	rows, err := s.db.Query("SELECT * FROM subjects")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
 
-	return nil, nil
+	var subjects []*models.Subject
+	for rows.Next() {
+		var subject models.Subject
+		if err := rows.Scan(&subject.Id, &subject.Name); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		subjects = append(subjects, &subject)
+	}
+
+	return subjects, nil
 }
 
 // create new subject

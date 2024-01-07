@@ -9,3 +9,13 @@ type Grade struct {
 	Month     int8 `json:"month"`
 	Course    int8 `json:"course"`
 }
+
+type GradesFindOpts struct {
+	Id        *int
+	UserId    *int
+	SubjectId *int
+	Value     *int8
+	Day       *int8
+	Month     *int8
+	Course    *int8
+}

@@ -4,9 +4,6 @@ import (
 	"eljur/internal/config"
 	"eljur/internal/service/grades"
 	"eljur/internal/storage"
-	"fmt"
-	"log/slog"
-	"os"
 )
 
 const configPath = "../config/config.yaml"
@@ -17,7 +14,7 @@ func GetStorage() (*storage.Storage, error) {
 		return nil, err
 	}
 
-	s, err := storage.New("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s", cnf.DB.User, cnf.DB.Password, cnf.DB.Host, cnf.DB.Schema))
+	s, err := storage.New(&cnf.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +27,8 @@ func GetGradesService() (*grades.GradeService, error) {
 	if err != nil {
 		return nil, err
 	}
-	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	//l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	return grades.New(s.Grades, s.Subjects, l), nil
+	return grades.New(s.Grades, s.Subjects), nil
 
 }

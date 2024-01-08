@@ -1,6 +1,7 @@
 package main
 
 import (
+	"eljur/internal/app"
 	"eljur/internal/config"
 	"eljur/internal/logger"
 	"fmt"
@@ -18,5 +19,8 @@ func main() {
 		panic(err)
 	}
 	l.Info(fmt.Sprintf("cnf: %+v", cnf))
-	
+
+	if err := app.Run(cnf, l); err != nil {
+		panic(err)
+	}
 }

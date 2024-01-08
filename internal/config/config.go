@@ -15,6 +15,7 @@ type BindConfig struct {
 }
 
 type DBConfig struct {
+	Driver   string `yaml:"driver"`
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`

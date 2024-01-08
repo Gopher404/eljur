@@ -1,8 +1,8 @@
 package AuthClient
 
 import (
+	ssoV1 "SSO/pkg/proto/sso"
 	"context"
-	ssoV1 "eljur/pkg/proto/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"net"

@@ -2,8 +2,10 @@ package storage
 
 import (
 	"database/sql"
+	"eljur/internal/config"
 	"eljur/internal/domain/models"
 	data "eljur/internal/storage/mysql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -34,8 +36,8 @@ type Storage struct {
 	Subjects Subjects
 }
 
-func New(driver string, dataSource string) (*Storage, error) {
-	db, err := sql.Open(driver, dataSource)
+func New(cnf *config.DBConfig) (*Storage, error) {
+	db, err := sql.Open(cnf.Driver, fmt.Sprintf("%s:%s@tcp(%s)/%s", cnf.User, cnf.Password, cnf.Host, cnf.Schema))
 	if err != nil {
 		return nil, err
 	}

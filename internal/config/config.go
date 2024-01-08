@@ -6,6 +6,7 @@ type Config struct {
 	Bind BindConfig `yaml:"bind"`
 	DB   DBConfig   `yaml:"DB"`
 	SSO  SSOConfig  `yaml:"SSO"`
+	Log  LogConfig  `yaml:"log"`
 }
 
 type BindConfig struct {
@@ -25,6 +26,12 @@ type SSOConfig struct {
 	Host   string `yaml:"host"`
 	Port   string `yaml:"port"`
 	AppKey string `yaml:"app_key"`
+}
+
+type LogConfig struct {
+	Type  string `yaml:"type"`
+	Out   string `yaml:"out"`
+	Level string `yaml:"level"`
 }
 
 func GetConfig(path string) (*Config, error) {

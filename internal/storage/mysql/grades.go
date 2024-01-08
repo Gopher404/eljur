@@ -19,7 +19,7 @@ func NewGradesStorage(db *sql.DB) *Grades {
 
 // create new grade
 
-func (g *Grades) NewGrade(grade models.Grade) (int, error) {
+func (g *Grades) NewGrade(grade *models.Grade) (int, error) {
 	const op = "mysql.NewGrade"
 
 	r, err := g.db.Exec("INSERT INTO grades (user_id, subject_id, value, day, month, course) VALUES (?, ?, ?, ?, ?, ?)",
@@ -95,11 +95,9 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 	return grades, nil
 }
 
-func (g *Grades) Update(grade models.Grade) error {
+func (g *Grades) Update(grade models.MinGrade) error {
 	const op = "mysql.Update"
-
-	if _, err := g.db.Exec("UPDATE grades SET user_id=?, subject_id=?, value=?, day=?, month=?, course=? WHERE id=?",
-		grade.UserId, grade.SubjectId, grade.Value, grade.Day, grade.Month, grade.Course, grade.Id); err != nil {
+	if _, err := g.db.Exec("UPDATE grades SET value=? WHERE id=?", grade.Value, grade.Id); err != nil {
 		return fmt.Errorf("%s, %w", op, err)
 	}
 	return nil

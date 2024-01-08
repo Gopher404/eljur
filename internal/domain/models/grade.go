@@ -10,6 +10,11 @@ type Grade struct {
 	Course    int8 `json:"course"`
 }
 
+type MinGrade struct {
+	Id    int  `json:"id"`
+	Value int8 `json:"value"`
+}
+
 type GradesFindOpts struct {
 	Id        *int
 	UserId    *int

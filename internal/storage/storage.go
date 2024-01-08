@@ -15,9 +15,9 @@ type Users interface {
 }
 
 type Grades interface {
-	NewGrade(grade models.Grade) (int, error)
+	NewGrade(grade *models.Grade) (int, error)
 	Find(opts models.GradesFindOpts) ([]*models.Grade, error)
-	Update(grade models.Grade) error
+	Update(grade models.MinGrade) error
 	Delete(id int) error
 }
 

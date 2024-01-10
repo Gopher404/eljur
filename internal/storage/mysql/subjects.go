@@ -19,9 +19,12 @@ func NewSubjectsStorage(db *sql.DB) *Subjects {
 // return subject name by id
 
 func (s *Subjects) GetById(id int) (string, error) {
-	// todo
-
-	return "", nil
+	const op = "mysql.GetById"
+	var name string
+	if err := s.db.QueryRow("SELECT name from subjects WHERE id=?", id).Scan(&name); err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+	return name, nil
 }
 
 // return [subject1, subject2, ...]
@@ -48,15 +51,19 @@ func (s *Subjects) GetAll() ([]*models.Subject, error) {
 // create new subject
 
 func (s *Subjects) NewSubject(name string) error {
-	// todo
-
+	const op = "mysql.NewSubject"
+	if _, err := s.db.Exec("INSERT INTO subjects (name) VALUES (?)", name); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	return nil
 }
 
 // delete subject
 
 func (s *Subjects) Delete(id int) error {
-	// todo
-
+	const op = "mysql.Delete"
+	if _, err := s.db.Exec("DELETE FROM subjects WHERE id=?", id); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	return nil
 }

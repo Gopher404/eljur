@@ -80,7 +80,7 @@ func TestSubjectStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, c := range cases {
-		err = s.Users.NewUser(c.name)
+		err = s.Subjects.NewSubject(c.name)
 		require.NoError(t, err, fmt.Sprintf("case: %d", c.id))
 	}
 
@@ -114,7 +114,7 @@ func TestGradesStorage(t *testing.T) {
 		Course:    3,
 	}
 
-	id, err := s.Grades.NewGrade(grade)
+	id, err := s.Grades.NewGrade(&grade)
 	require.NoError(t, err)
 
 	gradeR, err := s.Grades.Find(models.GradesFindOpts{Id: &id})
@@ -138,14 +138,17 @@ func TestGradesStorage(t *testing.T) {
 	grade2 := models.Grade{
 		Id:        id,
 		UserId:    2,
-		SubjectId: 3,
+		SubjectId: 2,
 		Value:     5,
-		Day:       6,
-		Month:     2,
-		Course:    4,
+		Day:       5,
+		Month:     1,
+		Course:    3,
 	}
 
-	err = s.Grades.Update(grade2)
+	err = s.Grades.Update(models.MinGrade{
+		Id:    grade2.Id,
+		Value: grade2.Value,
+	})
 	require.NoError(t, err)
 
 	gradeR, err = s.Grades.Find(models.GradesFindOpts{Id: &grade2.Id})

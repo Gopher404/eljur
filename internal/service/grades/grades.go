@@ -43,6 +43,7 @@ func (g *GradeService) GetUserGradesByMonth(userId int, month int8, course int8)
 		Month:  &month,
 		Course: &course,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -61,6 +62,7 @@ func (g *GradeService) GetUserGradesByMonth(userId int, month int8, course int8)
 		for _, grade := range grades {
 			if subject.Id == grade.SubjectId {
 				newGradesSlice = append(newGradesSlice, MinGradeStringWithDay{
+					Id:    grade.Id,
 					Value: grade.Value,
 					Day:   grade.Day,
 				})
@@ -126,6 +128,16 @@ func (g *GradeService) UpdateGrades(grades []models.MinGrade) error {
 	const op = "GradeService.UpdateGrades"
 	for _, grade := range grades {
 		if err := g.gradesStorage.Update(grade); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
+	return nil
+}
+
+func (g *GradeService) DeleteGrades(gradesId []int) error {
+	const op = "GradeService.DeleteGrades"
+	for _, id := range gradesId {
+		if err := g.gradesStorage.Delete(id); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}

@@ -18,8 +18,9 @@ func NewUsersStorage(db *sql.DB) *Users {
 // create new user
 
 func (u *Users) NewUser(fullName string) error {
-	// todo
-
+	if _, err := u.db.Exec("INSERT INTO users (name) VALUES (?)", fullName); err != nil {
+		return err
+	}
 	return nil
 }
 

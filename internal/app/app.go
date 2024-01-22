@@ -7,6 +7,7 @@ import (
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
 	"eljur/internal/storage"
+	"eljur/pkg/AuthClient"
 	"log/slog"
 )
 
@@ -20,9 +21,20 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 	gradesService := grades.New(s.Grades, s.Subjects)
 	usersService := users.New(s.Users)
 	subjectsService := subjects.New(s.Subjects)
+	authClient, err := AuthClient.New(cnf.SSO.Host, cnf.SSO.Port, cnf.SSO.AppKey)
+	if err != nil {
+		return err
+	}
+
 	l.Info("setup services")
 
-	handler := httpServer.NewHandler(l, gradesService, usersService, subjectsService)
+	handler := httpServer.NewHandler(l,
+		gradesService,
+		usersService,
+		subjectsService,
+		authClient,
+	)
+
 	server := httpServer.NewServer(handler.GetMuxRouter(), &cnf.Bind)
 
 	l.Info("run server")

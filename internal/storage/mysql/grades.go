@@ -105,7 +105,6 @@ func (g *Grades) Update(grade models.MinGrade) error {
 
 func (g *Grades) Delete(id int) error {
 	const op = "mysql.Delete"
-
 	if _, err := g.db.Exec("DELETE FROM grades WHERE id=?", id); err != nil {
 		return fmt.Errorf("%s, %w", op, err)
 	}

@@ -4,6 +4,7 @@ import (
 	"eljur/internal/config"
 	"eljur/internal/service/grades"
 	"eljur/internal/storage"
+	"eljur/pkg/AuthClient"
 )
 
 const configPath = "../config/config.yaml"
@@ -31,4 +32,13 @@ func GetGradesService() (*grades.GradeService, error) {
 
 	return grades.New(s.Grades, s.Subjects), nil
 
+}
+
+func GetAuthClient() (*AuthClient.Client, error) {
+	cnf, err := config.GetConfig(configPath)
+	if err != nil {
+		return nil, err
+	}
+	client, err := AuthClient.New(cnf.SSO.Host, cnf.SSO.Port, cnf.SSO.AppKey)
+	return client, err
 }

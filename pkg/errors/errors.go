@@ -12,12 +12,12 @@ type Errs interface {
 }
 
 type errs struct {
-	value string
+	err string
 }
 
 func New(err string) Errs {
 	return &errs{
-		value: "'" + err + "'",
+		err: "'" + err + "'",
 	}
 }
 
@@ -26,11 +26,11 @@ func NewE(err error) Errs {
 }
 
 func (e *errs) Error() string {
-	return e.value
+	return e.err
 }
 
 func (e *errs) Down() Errs {
 	_, f, l, _ := runtime.Caller(1)
-	e.value = fmt.Sprintf("%s:%d > %s", f[strings.LastIndex(f, "/")+1:], l, e.value)
+	e.err = fmt.Sprintf("%s:%d > %s", f[strings.LastIndex(f, "/")+1:], l, e.err)
 	return e
 }

@@ -11,7 +11,8 @@ import (
 
 type Users interface {
 	NewUser(fullName string) error
-	GetById(id int) (string, error)
+	GetById(id int) (user models.User, err error)
+	GetId(login string) (int, error)
 	GetAll() ([]*models.User, error)
 	Delete(id int) error
 }

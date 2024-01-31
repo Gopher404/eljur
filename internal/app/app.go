@@ -18,7 +18,7 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 	}
 	l.Info("setup storage")
 
-	gradesService := grades.New(s.Grades, s.Subjects)
+	gradesService := grades.New(s.Grades, s.Subjects, s.Users)
 	usersService := users.New(s.Users)
 	subjectsService := subjects.New(s.Subjects)
 	authClient, err := AuthClient.New(cnf.SSO.Host, cnf.SSO.Port, cnf.SSO.AppKey)

@@ -3,7 +3,7 @@ package grades
 import (
 	"eljur/internal/domain/models"
 	"eljur/internal/storage"
-	"fmt"
+	"eljur/pkg/tr"
 )
 
 type GradeService struct {
@@ -12,10 +12,11 @@ type GradeService struct {
 	userStorage     storage.Users
 }
 
-func New(gradesStorage storage.Grades, subjectsStorage storage.Subjects) *GradeService {
+func New(gradesStorage storage.Grades, subjectsStorage storage.Subjects, userStorage storage.Users) *GradeService {
 	return &GradeService{
 		gradesStorage:   gradesStorage,
 		subjectsStorage: subjectsStorage,
+		userStorage:     userStorage,
 	}
 }
 
@@ -36,21 +37,23 @@ type SubjectGradesByMonth struct {
 	Grades [][]models.MinGrade `json:"grades"`
 }
 
-func (g *GradeService) GetUserGradesByMonth(userId int, month int8, course int8) (*UserGradesByMonth, error) {
-	const op = "GradeService.GetGradesByMonthForUser"
+func (g *GradeService) GetUserGradesByMonth(login string, month int8, course int8) (*UserGradesByMonth, error) {
+	userId, err := g.userStorage.GetId(login)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
 	grades, err := g.gradesStorage.Find(models.GradesFindOpts{
 		UserId: &userId,
 		Month:  &month,
 		Course: &course,
 	})
-
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, tr.Trace(err)
 	}
 
 	subjects, err := g.subjectsStorage.GetAll()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, tr.Trace(err)
 	}
 
 	var userGradesByMonth UserGradesByMonth
@@ -77,19 +80,18 @@ func (g *GradeService) GetUserGradesByMonth(userId int, month int8, course int8)
 }
 
 func (g *GradeService) GetByMonthAndSubject(month int8, subjectId int, course int8) (*SubjectGradesByMonth, error) {
-	const op = "GradeService.GetByMonth"
 	grades, err := g.gradesStorage.Find(models.GradesFindOpts{
 		SubjectId: &subjectId,
 		Month:     &month,
 		Course:    &course,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, tr.Trace(err)
 	}
 
 	users, err := g.userStorage.GetAll()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, tr.Trace(err)
 	}
 
 	var subjectGradesByMonth SubjectGradesByMonth
@@ -115,30 +117,27 @@ func (g *GradeService) GetByMonthAndSubject(month int8, subjectId int, course in
 }
 
 func (g *GradeService) SaveGrades(grades []*models.Grade) error {
-	const op = "GradeService.UpdateGrades"
 	for _, grade := range grades {
 		if _, err := g.gradesStorage.NewGrade(grade); err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			return tr.Trace(err)
 		}
 	}
 	return nil
 }
 
 func (g *GradeService) UpdateGrades(grades []models.MinGrade) error {
-	const op = "GradeService.UpdateGrades"
 	for _, grade := range grades {
 		if err := g.gradesStorage.Update(grade); err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			return tr.Trace(err)
 		}
 	}
 	return nil
 }
 
 func (g *GradeService) DeleteGrades(gradesId []int) error {
-	const op = "GradeService.DeleteGrades"
 	for _, id := range gradesId {
 		if err := g.gradesStorage.Delete(id); err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			return tr.Trace(err)
 		}
 	}
 	return nil

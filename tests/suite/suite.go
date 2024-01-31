@@ -30,7 +30,7 @@ func GetGradesService() (*grades.GradeService, error) {
 	}
 	//l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	return grades.New(s.Grades, s.Subjects), nil
+	return grades.New(s.Grades, s.Subjects, s.Users), nil
 
 }
 

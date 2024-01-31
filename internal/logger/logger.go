@@ -22,7 +22,7 @@ func SetupLogger(cnf *config.LogConfig) (*slog.Logger, error) {
 	}
 
 	var opts slog.HandlerOptions
-	opts.AddSource = true
+	//opts.AddSource = true
 
 	switch cnf.Level {
 	case "debug":

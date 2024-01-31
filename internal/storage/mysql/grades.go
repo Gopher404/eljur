@@ -3,8 +3,8 @@ package mysql
 import (
 	"database/sql"
 	"eljur/internal/domain/models"
+	"eljur/pkg/tr"
 	"errors"
-	"fmt"
 )
 
 type Grades struct {
@@ -20,23 +20,19 @@ func NewGradesStorage(db *sql.DB) *Grades {
 // create new grade
 
 func (g *Grades) NewGrade(grade *models.Grade) (int, error) {
-	const op = "mysql.NewGrade"
-
 	r, err := g.db.Exec("INSERT INTO grades (user_id, subject_id, value, day, month, course) VALUES (?, ?, ?, ?, ?, ?)",
 		grade.UserId, grade.SubjectId, grade.Value, grade.Day, grade.Month, grade.Course)
 	if err != nil {
-		return 0, fmt.Errorf("%s, %w", op, err)
+		return 0, tr.Trace(err)
 	}
 	id, err := r.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("%s, %w", op, err)
+		return 0, tr.Trace(err)
 	}
 	return int(id), nil
 }
 
 func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
-	const op = "mysql.GetByMonthForUser"
-
 	query := "SELECT * FROM grades WHERE " // начало sql запроса
 	var args []any                         // то что надо подставить в sql запрос
 
@@ -69,7 +65,7 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		query += "course=? AND "
 		args = append(args, *opts.Course)
 	}
-	query = query[:len(query)-5] + ";" // убираем последний не нужный "AND"
+	query = query[:len(query)-5] + " ORDER BY day ;" // убираем последний не нужный "AND"
 
 	var grades []*models.Grade
 
@@ -79,7 +75,7 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return grades, nil
 		}
-		return nil, fmt.Errorf("%s, %w", op, err)
+		return nil, tr.Trace(err)
 	}
 
 	// считываем данные с rows
@@ -87,7 +83,7 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		var grade models.Grade
 		if err := rows.Scan(&grade.Id, &grade.UserId, &grade.SubjectId,
 			&grade.Value, &grade.Day, &grade.Month, &grade.Course); err != nil {
-			return nil, fmt.Errorf("%s, %w", op, err)
+			return nil, tr.Trace(err)
 		}
 		grades = append(grades, &grade)
 	}
@@ -96,17 +92,15 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 }
 
 func (g *Grades) Update(grade models.MinGrade) error {
-	const op = "mysql.Update"
 	if _, err := g.db.Exec("UPDATE grades SET value=? WHERE id=?", grade.Value, grade.Id); err != nil {
-		return fmt.Errorf("%s, %w", op, err)
+		return tr.Trace(err)
 	}
 	return nil
 }
 
 func (g *Grades) Delete(id int) error {
-	const op = "mysql.Delete"
 	if _, err := g.db.Exec("DELETE FROM grades WHERE id=?", id); err != nil {
-		return fmt.Errorf("%s, %w", op, err)
+		return tr.Trace(err)
 	}
 	return nil
 }

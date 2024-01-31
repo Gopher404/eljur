@@ -3,8 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+        td {
+            padding: 0;
+            border: 1px solid black;
+        }
+        td > input {
+            border: 0;
+            padding: 0;
+            margin: 0;
+        }
+        td > input:focus {
+            outline: none;
+        }
+    </style>
 </head>
 <body>
-АСАЛАМАЛЕКУУУУУУУУУМ!
+
+<div id="grades">
+
+</div>
 </body>
+<script>
+    const min_grade = "-4"
+    const max_grade = "5"
+
+    const GradesMap = {
+        "1":  "1",
+        "2":  "2",
+        "3":  "3",
+        "4":  "4",
+        "5":  "5",
+        "0":  "",
+        "-1": "Н",
+        "-2": "У",
+        "-3": "Зач",
+        "-4": "НеЗач",
+    }
+    const RvGradesMap = {
+        "1":  1,
+        "2":  2,
+        "3":  3,
+        "4":  4,
+        "5":  5,
+        "":  0,
+        "Н": -1,
+        "У": -2,
+        "Зач": -3,
+        "НеЗач": -4,
+    }
+
+    let GradesUpdateList = {}
+    let GradesNewList = {}
+
+    function GetGradesByMonthAndSubject(month, subject_id, course) {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/grades_by_month_and_subject");
+        xhr.send(`{"month": ${month}, "course": ${course}, "subject_id": ${subject_id}}`);
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (xhr.status !== 200) {
+                alert("произошла ошибка при получении списка оценок")
+                return
+            }
+            console.log(xhr.response)
+            let table = document.createElement("table")
+
+
+            let row1 = document.createElement("tr")
+
+            let row1_html = "<td>Студенты</td>"
+            for (let day of xhr.response["days"].sort()) {
+                row1_html += `<td>${formatDate(month, day)}</td>`
+            }
+            row1.innerHTML = row1_html
+
+            table.appendChild(row1)
+
+
+            for (let i = 0; i < xhr.response["users"].length; i++) {
+                let row = document.createElement("tr")
+
+                let user_td = document.createElement("td")
+                user_td.innerHTML = `<td>${xhr.response["users"][i]}</td>`
+                row.appendChild(user_td)
+
+                for (let grade of xhr.response["grades"][i]) {
+                    let grade_td = document.createElement("td");
+                    let grade_input = document.createElement("input");
+
+                    grade_input.setAttribute("type", "text");
+                    grade_input.setAttribute("value", GradesMap[grade.value]);
+                    grade_input.setAttribute("id", `grade_in-${grade.id}`);
+
+                    grade_input.onchange = () => {
+                        console.log(grade_input.value)
+                        GradesUpdateList[grade.id] = RvGradesMap[grade_input.value]
+                    }
+
+                    grade_td.appendChild(grade_input)
+                    row.appendChild(grade_td)
+                }
+                table.appendChild(row)
+            }
+
+
+            document.getElementById("grades").appendChild(table)
+        }
+
+    }
+
+    function formatDate(month, day) {
+        let dayS = `${day}`
+        if (dayS.length === 1) {
+            dayS = "0" + dayS
+        }
+        let monthS = `${month}`
+        if (monthS.length === 1) {
+            monthS = "0" + monthS
+        }
+        return monthS + "." + dayS
+    }
+
+</script>
 </html>

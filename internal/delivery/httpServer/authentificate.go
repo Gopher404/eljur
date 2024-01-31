@@ -3,7 +3,6 @@ package httpServer
 import "net/http"
 
 func (h *Handler) authenticate(r *http.Request, perm int32) (login string, ok bool) {
-
 	token, err := getToken(r)
 	if err != nil {
 		return "", false

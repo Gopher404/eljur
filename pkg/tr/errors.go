@@ -7,10 +7,10 @@ import (
 
 func Trace(err error) error {
 	_, f, l, _ := runtime.Caller(1)
-	return fmt.Errorf("%s:%d > %w", tripPath(f), l, err) //f[strings.LastIndex(f, "/")+1:]
+	return fmt.Errorf("%s:%d > %w", trimPath(f), l, err) //f[strings.LastIndex(f, "/")+1:]
 }
 
-func tripPath(path string) string {
+func trimPath(path string) string {
 	const slash uint8 = 47
 	s := false
 

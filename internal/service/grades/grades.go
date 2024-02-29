@@ -21,9 +21,9 @@ func New(gradesStorage storage.Grades, subjectsStorage storage.Subjects, userSto
 }
 
 type MinGradeStringWithDay struct {
-	Id    int  `json:"id"`
-	Value int8 `json:"value"`
-	Day   int8 `json:"day"`
+	Id    int    `json:"id"`
+	Value string `json:"value"`
+	Day   int8   `json:"day"`
 }
 
 type UserGradesByMonth struct {
@@ -33,8 +33,13 @@ type UserGradesByMonth struct {
 
 type SubjectGradesByMonth struct {
 	Days   []int8              `json:"days"`
-	Users  []string            `json:"users"`
+	Users  []MinUser           `json:"users"`
 	Grades [][]models.MinGrade `json:"grades"`
+}
+
+type MinUser struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 func (g *GradeService) GetUserGradesByMonth(login string, month int8, course int8) (*UserGradesByMonth, error) {
@@ -97,7 +102,8 @@ func (g *GradeService) GetByMonthAndSubject(month int8, subjectId int, course in
 	var subjectGradesByMonth SubjectGradesByMonth
 
 	for i, user := range users {
-		subjectGradesByMonth.Users = append(subjectGradesByMonth.Users, user.FullName)
+		subjectGradesByMonth.Users = append(subjectGradesByMonth.Users, MinUser{user.Id, user.FullName})
+
 		var newGradesSlice []models.MinGrade
 		for _, grade := range grades {
 			if grade.UserId == user.Id {
@@ -142,17 +148,3 @@ func (g *GradeService) DeleteGrades(gradesId []int) error {
 	}
 	return nil
 }
-
-/*
-gradesMap:
-	1:  "1",
-	2:  "2",
-	3:  "3",
-	4:  "4",
-	5:  "5",
-	0:  "",
-	-1: "Н",
-	-2: "У",
-	-3: "Зач",
-	-4: "НеЗач",
-*/

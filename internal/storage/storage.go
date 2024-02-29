@@ -26,7 +26,7 @@ type Grades interface {
 
 type Subjects interface {
 	GetById(id int) (string, error)
-	GetAll() ([]*models.Subject, error)
+	GetAll() ([]models.Subject, error)
 	NewSubject(name string) error
 	Delete(id int) error
 }

@@ -2,8 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <title>Title</title>
     <style>
+        * {
+            margin: 2px;
+        }
+        .grade_in {
+            width: 45px;
+        }
         td {
             padding: 0;
             border: 1px solid black;
@@ -16,101 +25,429 @@
         td > input:focus {
             outline: none;
         }
+        .bt_plus {
+            color: #BFE2FF;
+            height: 35px;
+            width: 35px;
+            padding: 0;
+            border-radius: 10px;
+            border: 4px solid #BFE2FF;
+            background: #337AB7;
+            cursor: pointer;
+            outline: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .bt_plus svg {
+            stroke: #BFE2FF;
+            stroke-width: 4;
+            transition: 0.5s;
+            margin: 1px;
+        }
+        .dark-tooltip {
+            --bs-tooltip-bg: var(--bs-dark);
+        }
+        .danger-tooltip {
+            --bs-tooltip-bg: var(--bs-danger);
+        }
+
     </style>
 </head>
 <body>
 
+<header>
+    <div class="menu" style="display: flex;">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Курс
+            </button>
+            <ul class="dropdown-menu">
+                <li><button class="dropdown-item" onclick="SelectCourse(1)" id="course-1">1</button></li>
+                <li><button class="dropdown-item" onclick="SelectCourse(2)" id="course-2">2</button></li>
+                <li><button class="dropdown-item" onclick="SelectCourse(3)" id="course-3">3</button></li>
+                <li><button class="dropdown-item" onclick="SelectCourse(4)" id="course-4">4</button></li>
+            </ul>
+        </div>
+
+        <div class="dropdown" id="subject-dropdown">
+            <button class="btn btn-secondary dropdown-toggle" id="subject-dropdown-lbl" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Предмет
+            </button>
+            <ul class="dropdown-menu" id="subject-dropdown-menu">
+
+            </ul>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Месяц
+            </button>
+            <ul class="dropdown-menu">
+                <li><button class="dropdown-item" onclick="SelectMonth(1)" id="month-1">Январь</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(2)" id="month-2">Февраль</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(3)" id="month-3">Март</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(4)" id="month-4">Апрель</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(5)" id="month-5">Май</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(6)" id="month-6">Июнь</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(7)" id="month-7">Июль</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(8)" id="month-8">Август</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(9)" id="month-9">Сентябрь</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(10)" id="month-10">Октябрь</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(11)" id="month-11">Ноябрь</button></li>
+                <li><button class="dropdown-item" onclick="SelectMonth(12)" id="month-12">Декабрь</button></li>
+            </ul>
+        </div>
+    </div>
+    <h2 id="subject_name"></h2>
+</header>
+
 <div id="grades">
+
+</div>
+<div style="display: flex">
+    <button id="btn-save" class="btn btn-secondary" onclick="Save()">Сохранить</button>
+</div>
+
+<div id="modals">
 
 </div>
 </body>
 <script>
-    const min_grade = "-4"
-    const max_grade = "5"
-
-    const GradesMap = {
-        "1":  "1",
-        "2":  "2",
-        "3":  "3",
-        "4":  "4",
-        "5":  "5",
-        "0":  "",
-        "-1": "Н",
-        "-2": "У",
-        "-3": "Зач",
-        "-4": "НеЗач",
-    }
-    const RvGradesMap = {
-        "1":  1,
-        "2":  2,
-        "3":  3,
-        "4":  4,
-        "5":  5,
-        "":  0,
-        "Н": -1,
-        "У": -2,
-        "Зач": -3,
-        "НеЗач": -4,
-    }
-
+    let Users = []
     let GradesUpdateList = {}
-    let GradesNewList = {}
+    let GradesNewList = []
+    let GradesDeleteList = []
 
-    function GetGradesByMonthAndSubject(month, subject_id, course) {
+    let month = 1
+    let subject_id = 1
+    let course = 1
+
+    let btn_plus = `
+    <button class="bt_plus" onclick="DropdownShow('new_column_dropdown')"
+        data-bs-toggle="tooltip" data-bs-placement="top"
+        data-bs-custom-class="dark-tooltip"
+        data-bs-title="Создать столбец">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+
+    <div id="new_column_dropdown" class="dropdown-menu" style="margin-left: -115px">
+    <div style="width: 90%; position: absolute">
+        <button class="btn-close" onclick="DropdownShow('new_column_dropdown')"
+        style="margin-left: 90%;"></button>
+    </div>
+
+         <div class="mb-3">
+        <label for="input-num-of-day" class="form-label">Введите число</label>
+        <input type="number" class="form-control" id="input-num-of-day" min="1" max="31" value="1">
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="input-num-of-day-check">
+        <label class="form-check-label" for="input-num-of-day-check">Колонка "Итог"</label>
+    </div>
+    <button class="btn btn-primary" onclick="CreateColumn()">Создать</button>
+    </div>
+    `
+
+
+    getTableFromCookies()
+
+    document.getElementById(`month-${month}`).classList.add("active")
+    document.getElementById(`course-${course}`).classList.add("active")
+
+    let subjects_list = {
+    {{ range .Subjects }}
+        "{{ .Id }}": "{{.Name}}",
+    {{ end }}
+    }
+
+    let list = document.getElementById("subject-dropdown-menu")
+    for (let id of Object.keys(subjects_list)) {
+        list.innerHTML += `<li><button class="dropdown-item" onclick="SelectSubject(${id})" id="subject-${id}">${subjects_list[id]}</button></li>`
+
+    }
+    document.getElementById(`subject-${subject_id}`).classList.add("active")
+
+
+    function SelectSubject(id) {
+        document.getElementById(`subject-${subject_id}`).classList.remove("active")
+        document.getElementById(`subject-${id}`).classList.add("active");
+        subject_id = id;
+        setTableCookie()
+        GetGradesByMonthAndSubject()
+    }
+
+    function SelectMonth(month_in) {
+        document.getElementById(`month-${month}`).classList.remove("active")
+        document.getElementById(`month-${month_in}`).classList.add("active");
+        month = month_in;
+        setTableCookie()
+        GetGradesByMonthAndSubject()
+    }
+
+    function SelectCourse(course_in) {
+        document.getElementById(`course-${course}`).classList.remove("active")
+        document.getElementById(`course-${course_in}`).classList.add("active");
+        course = course_in;
+        setTableCookie()
+        GetGradesByMonthAndSubject()
+    }
+
+    function DropdownShow(id) {
+        let menu = document.getElementById(id)
+        if (menu.classList.contains("show")) {
+            menu.classList.remove("show")
+        } else {
+            menu.classList.add("show")
+        }
+    }
+
+    function GetGradesByMonthAndSubject() {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/grades_by_month_and_subject");
         xhr.send(`{"month": ${month}, "course": ${course}, "subject_id": ${subject_id}}`);
         xhr.responseType = "json";
         xhr.onload = () => {
             if (xhr.status !== 200) {
-                alert("произошла ошибка при получении списка оценок")
+                alert(`произошла ошибка при получении списка оценок, статус код ответа ${xhr.status}`)
                 return
             }
             console.log(xhr.response)
+            document.getElementById("subject_name").innerText = xhr.response["subject_name"] + ", " + course + " курс"
+
             let table = document.createElement("table")
 
 
             let row1 = document.createElement("tr")
 
             let row1_html = "<td>Студенты</td>"
-            for (let day of xhr.response["days"].sort()) {
-                row1_html += `<td>${formatDate(month, day)}</td>`
-            }
+
+            let modals = document.getElementById("modals")
+            try {
+                let i = 0;
+                for (let day of xhr.response["days"].sort()) {
+                    row1_html += `<td data-table="cell-${i}" class="date_cell" data-modal-id="del_column_dropdown-${i}">${formatDate(month, day)}</td>
+
+                    `
+                    modals.innerHTML += `<div id="del_column_dropdown-${i}" class="my-dropdown-menu" style="display: none; position: absolute;">
+                        <button class="btn btn-danger btn-sm"  onclick="deleteColumn(${i});BtnSaveActive();">
+                        Удалить
+</button>
+                    </div>`
+                    i++
+                }
+            } catch (err) {console.log(err)}
+
+            row1_html += `<td style="border: 0">${btn_plus}</td>`
+
             row1.innerHTML = row1_html
 
             table.appendChild(row1)
 
-
+            Users = xhr.response["users"]
             for (let i = 0; i < xhr.response["users"].length; i++) {
                 let row = document.createElement("tr")
 
                 let user_td = document.createElement("td")
-                user_td.innerHTML = `<td>${xhr.response["users"][i]}</td>`
+                user_td.innerHTML = `<td>${xhr.response["users"][i].name}</td>`
                 row.appendChild(user_td)
 
-                for (let grade of xhr.response["grades"][i]) {
-                    let grade_td = document.createElement("td");
-                    let grade_input = document.createElement("input");
+                if (xhr.response["grades"][i] !== null) {
+                    let j = 0
+                    for (let grade of xhr.response["grades"][i]) {
+                        let grade_td = document.createElement("td");
+                        grade_td.setAttribute("data-table", `cell-${j}`)
+                        let grade_input = document.createElement("input");
 
-                    grade_input.setAttribute("type", "text");
-                    grade_input.setAttribute("value", GradesMap[grade.value]);
-                    grade_input.setAttribute("id", `grade_in-${grade.id}`);
+                        grade_input.setAttribute("type", "text");
+                        grade_input.setAttribute("value", grade.value);
+                        grade_input.setAttribute("id", `grade_in-${grade.id}`);
+                        grade_input.setAttribute("maxlength", "5");
+                        grade_input.setAttribute("class", "grade_in");
 
-                    grade_input.onchange = () => {
-                        console.log(grade_input.value)
-                        GradesUpdateList[grade.id] = RvGradesMap[grade_input.value]
+                        grade_input.onchange = () => {
+                            BtnSaveActive()
+                            GradesUpdateList[grade.id] = grade_input.value
+                        }
+
+                        grade_td.appendChild(grade_input)
+                        row.appendChild(grade_td)
+
+                        j++
                     }
-
-                    grade_td.appendChild(grade_input)
-                    row.appendChild(grade_td)
                 }
                 table.appendChild(row)
             }
 
 
-            document.getElementById("grades").appendChild(table)
+            let div = document.getElementById("grades")
+            div.innerHTML = ""
+            div.appendChild(table)
+
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+            document.getElementById("input-num-of-day-check").onclick = () => {
+                let input = document.getElementById("input-num-of-day")
+                input.disabled = !input.disabled
+            }
+
+            let date_cells = document.querySelectorAll('[class="date_cell"]')
+            date_cells.forEach((elem) => {
+                let modal = document.getElementById(elem.getAttribute("data-modal-id"))
+                modal.style.left = `${elem.offsetLeft-2}px`
+                modal.style.top = `${elem.offsetHeight+22}px`
+                elem.onclick = () => {
+                    modal.style.display =  "block"
+
+                    setTimeout(
+                        () => {
+                            document.onclick = () => {
+                                modal.style.display = "none"
+                                document.onclick = () => {}
+                            }
+                        }, 2
+                    );
+                }
+
+
+            })
         }
 
+
+    }
+
+    function Save() {
+        if (GradesNewList.length !== 0) {
+             createGrades()
+        }
+        if (Object.keys(GradesUpdateList).length !== 0) {
+            updateGrades()
+        }
+        if (GradesDeleteList.length !== 0) {
+            deleteGrades()
+        }
+        GetGradesByMonthAndSubject()
+        BtnSaveDisable()
+    }
+
+
+    function CreateColumn() {
+        let input = document.getElementById("input-num-of-day")
+
+        let day = Number.parseInt(input.value)
+        if (input.disabled) {
+            day = -1
+        }
+
+        for (let user of Users) {
+            GradesNewList.push({
+                "id": 0,
+                "user_id": user.id,
+                "subject_id": subject_id,
+                "value": "",
+                "day": day,
+                "month": month,
+                "course": course,
+            })
+        }
+        DropdownShow("new_column_dropdown")
+        BtnSaveActive()
+    }
+
+    function deleteColumn(i) {
+        let cells = document.querySelectorAll(`[data-table="cell-${i}"]`)
+        cells.item(0).remove()
+
+        for (let j = 1; j < Users.length + 1; j++) {
+            let item = cells.item(j)
+            GradesDeleteList.push(Number.parseInt(item.childNodes.item(0).id.split("-")[1]))
+            item.remove()
+        }
+    }
+
+    function deleteGrades() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/delete_grades", false);
+        xhr.send(JSON.stringify(GradesDeleteList));
+
+        if (xhr.status !== 200) {
+            alert(`Произошла ошибка при удалении оценок, статус код ответа ${xhr.status}`)
+        } else {
+            GradesDeleteList = []
+        }
+
+    }
+
+    function createGrades() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/create_grades", false);
+        xhr.send(JSON.stringify(GradesNewList));
+
+        if (xhr.status !== 200) {
+            alert(`Произошла ошибка при записи оценок, статус код ответа ${xhr.status}`)
+        } else {
+            GradesNewList = []
+        }
+
+    }
+
+    function updateGrades() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/update_grades", false);
+        let req = "["
+        for (let id of Object.keys(GradesUpdateList)) {
+            console.log()
+            req += `{"Id": ${id}, "Value": "${GradesUpdateList[id]}"},`
+        }
+        req = req.slice(0, req.length-1) + "]"
+        xhr.send(req);
+
+        if (xhr.status !== 200) {
+            alert(`Произошла ошибка при обновление оценок, статус код ответа ${xhr.status}`)
+        } else {
+            GradesUpdateList = {}
+        }
+
+    }
+    let btnSave = document.getElementById("btn-save")
+    function BtnSaveActive() {
+        btnSave.classList.remove("btn-secondary")
+        btnSave.classList.add("btn-primary")
+    }
+    function BtnSaveDisable() {
+        btnSave.classList.remove("btn-primary")
+        btnSave.classList.add("btn-secondary")
+    }
+
+    function getTableFromCookies() {
+        let index1 = document.cookie.indexOf("table")
+        if (index1 === -1) {
+            return
+        }
+        index1 += 6
+        let index2 = index1
+        while (document.cookie[index2] !== ";" && document.cookie[index2] !== undefined) {
+            index2++
+            if (index2 > 1000) {
+                return;
+            }
+        }
+        let params = document.cookie.substring(index1, index2).split(".")
+        console.log(params)
+        course = Number.parseInt(params[0])
+        if (Number.isNaN(course)) {
+            course = 1
+        }
+        subject_id = Number.parseInt(params[1])
+        if (Number.isNaN(subject_id)) {
+            subject_id = 1
+        }
+        month = Number.parseInt(params[2])
+        if (Number.isNaN(month)) {
+            month = 1
+        }
+    }
+
+    function setTableCookie() {
+        document.cookie = `table=${course}.${subject_id}.${month}`
     }
 
     function formatDate(month, day) {
@@ -124,6 +461,10 @@
         }
         return monthS + "." + dayS
     }
+
+    GetGradesByMonthAndSubject()
+
+
 
 </script>
 </html>

@@ -28,19 +28,19 @@ func (s *Subjects) GetById(id int) (string, error) {
 
 // return [subject1, subject2, ...]
 
-func (s *Subjects) GetAll() ([]*models.Subject, error) {
+func (s *Subjects) GetAll() ([]models.Subject, error) {
 	rows, err := s.db.Query("SELECT * FROM subjects")
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
 
-	var subjects []*models.Subject
+	var subjects []models.Subject
 	for rows.Next() {
 		var subject models.Subject
 		if err := rows.Scan(&subject.Id, &subject.Name); err != nil {
 			return nil, tr.Trace(err)
 		}
-		subjects = append(subjects, &subject)
+		subjects = append(subjects, subject)
 	}
 
 	return subjects, nil

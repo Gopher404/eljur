@@ -41,7 +41,12 @@ func NewHandler(l *slog.Logger,
 
 func (h *Handler) GetMuxRouter() *mux.Router {
 	rtr := mux.NewRouter()
+	h.setupEndpoints(rtr)
 
+	return rtr
+}
+
+func (h *Handler) setupEndpoints(rtr *mux.Router) {
 	rtr.HandleFunc("/",
 		h.logHandle(h.handleIndex),
 	).Methods("GET")
@@ -70,7 +75,17 @@ func (h *Handler) GetMuxRouter() *mux.Router {
 		h.logHandle(h.getGradesByMonthAndSubject),
 	).Methods("POST")
 
-	return rtr
+	rtr.HandleFunc("/update_grades",
+		h.logHandle(h.updateGrades),
+	).Methods("POST")
+
+	rtr.HandleFunc("/create_grades",
+		h.logHandle(h.saveGrades),
+	).Methods("POST")
+
+	rtr.HandleFunc("/delete_grades",
+		h.logHandle(h.deleteGrades),
+	).Methods("POST")
 }
 
 type Message struct {
@@ -94,14 +109,24 @@ func (h *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 }
 
+type adminTmpData struct {
+	Subjects []models.Subject `json:"subjects"`
+}
+
 func (h *Handler) handleAdmin(w http.ResponseWriter, r *http.Request) {
 	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login_admin")
 		return
 	}
-
-	h.renderTemplate(w, "admin.html", nil)
+	subjectsList, err := h.subjectService.GetAllSubjects()
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	h.renderTemplate(w, "admin.html", adminTmpData{
+		Subjects: subjectsList,
+	})
 }
 
 type getUserGradesByMonthIn struct {
@@ -147,6 +172,12 @@ type getGradesByMonthAndSubjectIn struct {
 	SubjectId int  `json:"subject_id"`
 	Course    int8 `json:"course"`
 }
+type getGradesByMonthAndSubjectOut struct {
+	Days        []int8              `json:"days"`
+	Users       []grades.MinUser    `json:"users"`
+	Grades      [][]models.MinGrade `json:"grades"`
+	SubjectName string              `json:"subject_name"`
+}
 
 func (h *Handler) getGradesByMonthAndSubject(w http.ResponseWriter, r *http.Request) {
 	_, ok := h.authenticate(r, models.PermAdmin)
@@ -167,12 +198,24 @@ func (h *Handler) getGradesByMonthAndSubject(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	out, err := h.gradesService.GetByMonthAndSubject(in.Month, in.SubjectId, in.Course)
+	res, err := h.gradesService.GetByMonthAndSubject(in.Month, in.SubjectId, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
-	resp, err := json.Marshal(out)
+
+	subjectName, err := h.subjectService.GetSubject(in.SubjectId)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(&getGradesByMonthAndSubjectOut{
+		Days:        res.Days,
+		Users:       res.Users,
+		Grades:      res.Grades,
+		SubjectName: subjectName,
+	})
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
@@ -198,12 +241,14 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 		if err != nil {
 			h.renderTemplate(w, "login.html", Message{Mess: "Неверный логин или пароль"})
 			h.l.Warn(tr.Trace(err).Error())
+			return
 		}
 
 		realPerm, err := h.auth.GetPermission(r.Context(), login)
 		if err != nil || realPerm < perm {
 			h.renderTemplate(w, "login.html", Message{Mess: "Недостаточно прав"})
 			h.l.Warn(tr.Trace(err).Error())
+			return
 		}
 
 		http.SetCookie(w, &http.Cookie{
@@ -263,6 +308,32 @@ func (h *Handler) saveGrades(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.gradesService.SaveGrades(in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) deleteGrades(w http.ResponseWriter, r *http.Request) {
+	_, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	var in []int
+
+	if err := json.Unmarshal(body, &in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.gradesService.DeleteGrades(in); err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}

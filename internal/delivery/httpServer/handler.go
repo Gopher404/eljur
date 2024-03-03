@@ -41,31 +41,20 @@ func NewHandler(l *slog.Logger,
 
 func (h *Handler) GetMuxRouter() *mux.Router {
 	rtr := mux.NewRouter()
-	h.setupEndpoints(rtr)
-
+	h.setEndpoints(rtr)
 	return rtr
 }
 
-func (h *Handler) setupEndpoints(rtr *mux.Router) {
+func (h *Handler) setEndpoints(rtr *mux.Router) {
 	rtr.HandleFunc("/",
 		h.logHandle(h.handleIndex),
 	).Methods("GET")
 
-	rtr.HandleFunc("/admin",
-		h.logHandle(h.handleAdmin),
-	).Methods("GET")
+	h.setAdminEndpoints(rtr, "/admin")
 
-	rtr.HandleFunc("/login_student",
-		h.logHandle(func(w http.ResponseWriter, r *http.Request) {
-			h.loginUser(w, r, models.PermStudent, "/")
-		}),
-	).Methods("GET", "POST")
+	h.setStudentEndpoints(rtr, "/student")
 
-	rtr.HandleFunc("/login_admin",
-		h.logHandle(func(w http.ResponseWriter, r *http.Request) {
-			h.loginUser(w, r, models.PermAdmin, "/admin")
-		}),
-	).Methods("GET", "POST")
+	h.setGradesEndpoints(rtr, "/grades")
 
 	rtr.HandleFunc("/user_grades_by_month",
 		h.handleGetUserGradesByMonth,
@@ -75,17 +64,6 @@ func (h *Handler) setupEndpoints(rtr *mux.Router) {
 		h.logHandle(h.getGradesByMonthAndSubject),
 	).Methods("POST")
 
-	rtr.HandleFunc("/update_grades",
-		h.logHandle(h.updateGrades),
-	).Methods("POST")
-
-	rtr.HandleFunc("/create_grades",
-		h.logHandle(h.saveGrades),
-	).Methods("POST")
-
-	rtr.HandleFunc("/delete_grades",
-		h.logHandle(h.deleteGrades),
-	).Methods("POST")
 }
 
 type Message struct {
@@ -107,26 +85,6 @@ func (h *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	h.renderTemplate(w, "index.html", Login{Login: login})
 
-}
-
-type adminTmpData struct {
-	Subjects []models.Subject `json:"subjects"`
-}
-
-func (h *Handler) handleAdmin(w http.ResponseWriter, r *http.Request) {
-	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
-		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, "/login_admin")
-		return
-	}
-	subjectsList, err := h.subjectService.GetAllSubjects()
-	if err != nil {
-		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
-		return
-	}
-	h.renderTemplate(w, "admin.html", adminTmpData{
-		Subjects: subjectsList,
-	})
 }
 
 type getUserGradesByMonthIn struct {
@@ -223,7 +181,7 @@ func (h *Handler) getGradesByMonthAndSubject(w http.ResponseWriter, r *http.Requ
 	_, _ = w.Write(resp)
 }
 
-// tools
+const TTL = time.Hour * 24 * 30
 
 func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, outUrl string) {
 	if r.Method == "GET" {
@@ -254,7 +212,8 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   token,
-			Expires: time.Now().Add(time.Hour * 24 * 30),
+			Path:    "/",
+			Expires: time.Now().Add(TTL),
 		})
 
 		redirect(w, outUrl)

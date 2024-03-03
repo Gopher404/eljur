@@ -1,18 +1,28 @@
 package httpServer
 
-import "net/http"
+import (
+	"eljur/pkg/tr"
+	"net/http"
+)
 
 func (h *Handler) authenticate(r *http.Request, perm int32) (login string, ok bool) {
 	token, err := getToken(r)
 	if err != nil {
+		h.l.Warn(tr.Trace(err).Error())
 		return "", false
 	}
 	login, err = h.auth.ParseToken(r.Context(), token)
 	if err != nil {
+		h.l.Warn(tr.Trace(err).Error())
 		return "", false
 	}
 
-	if realPerm, err := h.auth.GetPermission(r.Context(), login); err != nil || realPerm < perm {
+	realPerm, err := h.auth.GetPermission(r.Context(), login)
+	if err != nil {
+		h.l.Warn(tr.Trace(err).Error())
+		return "", false
+	}
+	if realPerm < perm {
 		return "", false
 	}
 

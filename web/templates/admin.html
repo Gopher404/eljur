@@ -112,14 +112,19 @@
 </div>
 </body>
 <script>
+    let SaveList = []
     let Users = []
-    let GradesUpdateList = {}
-    let GradesNewList = []
-    let GradesDeleteList = []
+    let Days = []
+    let NewGradesIdCounter = -1
 
     let month = 1
     let subject_id = 1
     let course = 1
+
+    const ActionUpdate = 0
+    const ActionDelete = 1
+    const ActionNew = 2
+
 
     let btn_plus = `
     <button class="bt_plus" onclick="DropdownShow('new_column_dropdown')"
@@ -143,7 +148,7 @@
         <input type="checkbox" class="form-check-input" id="input-num-of-day-check">
         <label class="form-check-label" for="input-num-of-day-check">Колонка "Итог"</label>
     </div>
-    <button class="btn btn-primary" onclick="CreateColumn()">Создать</button>
+    <button class="btn btn-primary" onclick="CreateColumn();DropdownShow('new_column_dropdown');">Создать</button>
     </div>
     `
 
@@ -211,24 +216,26 @@
                 return
             }
             console.log(xhr.response)
-            document.getElementById("subject_name").innerText = xhr.response["subject_name"] + ", " + course + " курс"
+            document.getElementById("subject_name").innerText = xhr.response["subject_name"] + ", " + course + " курс, " + document.getElementById(`month-${month}`).innerText
+
+            Days = []
 
             let table = document.createElement("table")
-
-
             let row1 = document.createElement("tr")
-
-            let row1_html = "<td>Студенты</td>"
+            let row1_html = `<td data-table-column="0">Студенты</td>`
 
             let modals = document.getElementById("modals")
+            modals.innerHTML = ""
             try {
-                let i = 0;
-                for (let day of xhr.response["days"].sort()) {
-                    row1_html += `<td data-table="cell-${i}" class="date_cell" data-modal-id="del_column_dropdown-${i}">${formatDate(month, day)}</td>
+                let i = 1;
+                Days = xhr.response["days"].sort((a, b) => {return a - b})
 
-                    `
+                for (let day of Days) {
+                    console.log(day)
+                    row1_html += `<td class="date_cell" data-table-column="${i}" data-modal-id="del_column_dropdown-${i}">${formatDate(month, day)}</td>`
+
                     modals.innerHTML += `<div id="del_column_dropdown-${i}" class="my-dropdown-menu" style="display: none; position: absolute;">
-                        <button class="btn btn-danger btn-sm"  onclick="deleteColumn(${i});BtnSaveActive();">
+                        <button class="btn btn-danger btn-sm"  onclick="deleteColumn(${i}, ${day});BtnSaveActive();">
                         Удалить
 </button>
                     </div>`
@@ -247,30 +254,14 @@
                 let row = document.createElement("tr")
 
                 let user_td = document.createElement("td")
-                user_td.innerHTML = `<td>${xhr.response["users"][i].name}</td>`
+                user_td.setAttribute("data-table-column", "0")
+                user_td.innerText = xhr.response["users"][i].name
                 row.appendChild(user_td)
 
                 if (xhr.response["grades"][i] !== null) {
                     let j = 0
                     for (let grade of xhr.response["grades"][i]) {
-                        let grade_td = document.createElement("td");
-                        grade_td.setAttribute("data-table", `cell-${j}`)
-                        let grade_input = document.createElement("input");
-
-                        grade_input.setAttribute("type", "text");
-                        grade_input.setAttribute("value", grade.value);
-                        grade_input.setAttribute("id", `grade_in-${grade.id}`);
-                        grade_input.setAttribute("maxlength", "5");
-                        grade_input.setAttribute("class", "grade_in");
-
-                        grade_input.onchange = () => {
-                            BtnSaveActive()
-                            GradesUpdateList[grade.id] = grade_input.value
-                        }
-
-                        grade_td.appendChild(grade_input)
-                        row.appendChild(grade_td)
-
+                        row.appendChild(CreateGradeTd(grade.id, grade.value, j+1))
                         j++
                     }
                 }
@@ -291,12 +282,12 @@
 
             let date_cells = document.querySelectorAll('[class="date_cell"]')
             date_cells.forEach((elem) => {
-                let modal = document.getElementById(elem.getAttribute("data-modal-id"))
-                modal.style.left = `${elem.offsetLeft-2}px`
-                modal.style.top = `${elem.offsetHeight+22}px`
-                elem.onclick = () => {
-                    modal.style.display =  "block"
 
+                elem.onclick = () => {
+                    let modal = document.getElementById(elem.getAttribute("data-modal-id"))
+                    modal.style.left = `${elem.offsetLeft-2}px`
+                    modal.style.top = `${elem.offsetHeight+22}px`
+                    modal.style.display =  "block"
                     setTimeout(
                         () => {
                             document.onclick = () => {
@@ -314,33 +305,134 @@
 
     }
 
-    function Save() {
-        if (GradesNewList.length !== 0) {
-             createGrades()
+
+    function CreateGradeTd(id, value, idColumn) {
+        let grade_td = document.createElement("td");
+        grade_td.setAttribute("data-table-column", `${idColumn}`)
+        let grade_input = document.createElement("input");
+
+        grade_input.setAttribute("type", "text");
+        grade_input.setAttribute("value", value);
+        grade_input.setAttribute("id", `grade_in:${id}`);
+        grade_input.setAttribute("maxlength", "5");
+        grade_input.setAttribute("class", "grade_in");
+
+        grade_input.onchange = () => {
+            BtnSaveActive()
+            OnUpdateGrade(id, grade_input.value)
         }
-        if (Object.keys(GradesUpdateList).length !== 0) {
-            updateGrades()
-        }
-        if (GradesDeleteList.length !== 0) {
-            deleteGrades()
-        }
-        GetGradesByMonthAndSubject()
-        BtnSaveDisable()
+
+        grade_td.appendChild(grade_input)
+
+        return grade_td
     }
 
+    function Save() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/grades/save");
+        xhr.send(JSON.stringify(SaveList));
+        xhr.onload = () => {
+            if (xhr.status !== 200) {
+                alert(`Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)
+            } else {
+                SaveList = []
+                GetGradesByMonthAndSubject()
+                BtnSaveDisable()
+            }
+        }
+        xhr.onerror = () => {
+            alert(`Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)
+
+        }
+    }
+
+
+    function OnUpdateGrade(id, value) {
+        for (let i = 0; i < SaveList.length; i++) {
+            if (SaveList[i].id === id) {
+                SaveList[i].value = value
+                return
+            }
+        }
+        SaveList.push({
+            "action": ActionUpdate,
+            "id": id,
+            "value": value,
+        })
+    }
 
     function CreateColumn() {
         let input = document.getElementById("input-num-of-day")
 
         let day = Number.parseInt(input.value)
+
+        let idBefore = 0
+        let len = Days.length
         if (input.disabled) {
-            day = -1
+            day = 100
+            idBefore = Days.length
+            Days.push(day)
+        } else {
+            let f = true
+            for (let i = Days.length; i >= 0; i--) {
+                if (day >= Days[i]) {
+                    idBefore = i+1
+                    Days = Days.slice(0, i+1).concat(day).concat(Days.slice(i+1, Days.length))
+                    f = false
+                    break
+                }
+            }
+            if (f) {
+                if (Days[0] > day) {
+                    idBefore = 0
+                    Days = [day].concat(Days)
+                } else {
+                    idBefore = Days.length
+                    Days.push(day)
+                }
+            }
         }
 
-        for (let user of Users) {
-            GradesNewList.push({
-                "id": 0,
-                "user_id": user.id,
+        UpdateGradesAndModalId(idBefore, len, 1)
+
+
+        let elemsBefore = document.querySelectorAll(`[data-table-column="${idBefore}"]`)
+
+        let td = document.createElement("td")
+        td.classList.add("date_cell")
+        td.setAttribute("data-table-column", `${idBefore+1}`)
+        td.setAttribute("data-modal-id", `del_column_dropdown-${idBefore+1}`)
+        td.onclick = () => {
+            let modal = document.getElementById(td.getAttribute("data-modal-id"))
+            modal.style.left = `${td.offsetLeft-2}px`
+            modal.style.top = `${td.offsetHeight+22}px`
+            modal.style.display =  "block"
+            setTimeout(
+                () => {
+                    document.onclick = () => {
+                        modal.style.display = "none"
+                        document.onclick = () => {}
+                    }
+                }, 2
+            )
+        }
+        td.innerText = formatDate(month, day)
+        elemsBefore.item(0).after(td)
+
+        document.getElementById("modals").innerHTML += `
+        <div id="del_column_dropdown-${idBefore+1}" class="my-dropdown-menu" style="display: none; position: absolute;">
+        <button class="btn btn-danger btn-sm"  onclick="deleteColumn(${idBefore+1}, ${day});BtnSaveActive();">Удалить</button></div>`
+
+        console.log(elemsBefore)
+        for (let i=0; i< Users.length; i++) {
+            NewGradesIdCounter--
+            let elemBefore = elemsBefore.item(i+1)
+            elemBefore.after(CreateGradeTd(NewGradesIdCounter, "", idBefore+1))
+
+            SaveList.push({
+                "action": ActionNew,
+                "id": NewGradesIdCounter,
+                "user_id": Users[i].id,
                 "subject_id": subject_id,
                 "value": "",
                 "day": day,
@@ -348,65 +440,94 @@
                 "course": course,
             })
         }
-        DropdownShow("new_column_dropdown")
         BtnSaveActive()
     }
 
-    function deleteColumn(i) {
-        let cells = document.querySelectorAll(`[data-table="cell-${i}"]`)
+    function UpdateGradesAndModalId(startId, endId, add) {
+        let d
+        let f
+
+        if (add > 0) {
+            let t = startId
+            startId = endId
+            endId = t
+            d = -1
+            f = (a, b) => {return a > b}
+        } else {
+            d = 1
+            f = (a, b) => {return a <= b}
+        }
+
+        for (let i = startId; f(i, endId); i+=d) {
+            let cells = document.querySelectorAll(`[data-table-column="${i}"]`)
+
+            cells.item(0).setAttribute("data-modal-id", `del_column_dropdown-${i+add}`)
+            let date = cells.item(0).innerHTML
+            let day
+            if (date === "Итог") {
+                day = 100
+            } else {
+                day = date.split(".")[1]
+            }
+
+
+            cells.forEach((elem) => {
+                elem.setAttribute("data-table-column", i+add)
+
+            })
+            let modal = document.getElementById(`del_column_dropdown-${i}`)
+            modal.id = `del_column_dropdown-${i+add}`
+            modal.children[0].setAttribute("onclick", `deleteColumn(${i+add}, ${day});BtnSaveActive();`)
+        }
+    }
+
+
+
+    function deleteColumn(i, day) {
+        console.log(i, day)
+        let cells = document.querySelectorAll(`[data-table-column="${i}"]`)
         cells.item(0).remove()
+        let len = Days.length
+
+        for (let j = 0; j<Days.length; j++) {
+            if (Days[j] === day) {
+
+                Days = Days.slice(0, j).concat(Days.slice(j+1, Days.length))
+                break
+            }
+        }
 
         for (let j = 1; j < Users.length + 1; j++) {
             let item = cells.item(j)
-            GradesDeleteList.push(Number.parseInt(item.childNodes.item(0).id.split("-")[1]))
+
+            let id = Number.parseInt(item.childNodes[0].id.split(":")[1])
+
+            let f = true
+            for (let i=0; i<SaveList.length; i++) {
+                if (SaveList[i].id === id) {
+                    if (SaveList[i].action === ActionNew) {
+                        f = false
+                    }
+                    SaveList = SaveList.slice(0, i).concat(SaveList.slice(i+1, SaveList.length))
+                }
+            }
+            if (f) {
+                SaveList.push({
+                    "action": ActionDelete,
+                    "id": id,
+                })
+            }
+
             item.remove()
         }
-    }
+        UpdateGradesAndModalId(i+1, len, -1)
+        document.getElementById(`del_column_dropdown-${i}`).remove()
 
-    function deleteGrades() {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/delete_grades", false);
-        xhr.send(JSON.stringify(GradesDeleteList));
 
-        if (xhr.status !== 200) {
-            alert(`Произошла ошибка при удалении оценок, статус код ответа ${xhr.status}`)
-        } else {
-            GradesDeleteList = []
-        }
 
     }
 
-    function createGrades() {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/create_grades", false);
-        xhr.send(JSON.stringify(GradesNewList));
 
-        if (xhr.status !== 200) {
-            alert(`Произошла ошибка при записи оценок, статус код ответа ${xhr.status}`)
-        } else {
-            GradesNewList = []
-        }
-
-    }
-
-    function updateGrades() {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/update_grades", false);
-        let req = "["
-        for (let id of Object.keys(GradesUpdateList)) {
-            console.log()
-            req += `{"Id": ${id}, "Value": "${GradesUpdateList[id]}"},`
-        }
-        req = req.slice(0, req.length-1) + "]"
-        xhr.send(req);
-
-        if (xhr.status !== 200) {
-            alert(`Произошла ошибка при обновление оценок, статус код ответа ${xhr.status}`)
-        } else {
-            GradesUpdateList = {}
-        }
-
-    }
     let btnSave = document.getElementById("btn-save")
     function BtnSaveActive() {
         btnSave.classList.remove("btn-secondary")
@@ -451,6 +572,9 @@
     }
 
     function formatDate(month, day) {
+        if (day === 100) {
+            return "Итог"
+        }
         let dayS = `${day}`
         if (dayS.length === 1) {
             dayS = "0" + dayS
@@ -461,6 +585,8 @@
         }
         return monthS + "." + dayS
     }
+
+
 
     GetGradesByMonthAndSubject()
 

@@ -4,6 +4,7 @@ import (
 	"eljur/internal/domain/models"
 	"eljur/internal/storage"
 	"eljur/pkg/tr"
+	"errors"
 )
 
 type GradeService struct {
@@ -120,6 +121,47 @@ func (g *GradeService) GetByMonthAndSubject(month int8, subjectId int, course in
 	}
 
 	return &subjectGradesByMonth, nil
+}
+
+func (g *GradeService) Save(grades []*models.GradeToSave) error {
+	var AllErr string
+
+	for _, grade := range grades {
+		switch grade.Action {
+		case models.GradeActionNew:
+			if _, err := g.gradesStorage.NewGrade(&models.Grade{
+				UserId:    grade.UserId,
+				SubjectId: grade.SubjectId,
+				Value:     grade.Value,
+				Day:       grade.Day,
+				Month:     grade.Month,
+				Course:    grade.Course,
+			}); err != nil {
+				AllErr += err.Error() + "; "
+			}
+			break
+
+		case models.GradeActionUpdate:
+			if err := g.gradesStorage.Update(models.MinGrade{
+				Id:    grade.Id,
+				Value: grade.Value,
+			}); err != nil {
+				AllErr += err.Error() + "; "
+			}
+			break
+
+		case models.GradeActionDelete:
+			if err := g.gradesStorage.Delete(grade.Id); err != nil {
+				AllErr += err.Error() + "; "
+			}
+			break
+		}
+	}
+
+	if AllErr != "" {
+		return tr.Trace(errors.New(AllErr))
+	}
+	return nil
 }
 
 func (g *GradeService) SaveGrades(grades []*models.Grade) error {

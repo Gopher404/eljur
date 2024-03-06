@@ -18,31 +18,31 @@ func NewUsersStorage(db *sql.DB) *Users {
 
 // create new user
 
-func (u *Users) NewUser(fullName string) error {
-	if _, err := u.db.Exec("INSERT INTO users (name) VALUES (?);", fullName); err != nil {
-		return tr.Trace(err)
+func (u *Users) NewUser(name, login string) (int, error) {
+	res, err := u.db.Exec("INSERT INTO users (name, login) VALUES (?, ?);", name, login)
+	if err != nil {
+		return 0, tr.Trace(err)
 	}
-	return nil
+	id, _ := res.LastInsertId()
+	return int(id), nil
 }
 
-// return username
-
-func (u *Users) GetById(id int) (user models.User, err error) {
-	// todo
-
-	return user, nil
+func (u *Users) GetById(id int) (*models.User, error) {
+	var user models.User
+	row := u.db.QueryRow("SELECT * FROM users WHERE id=?;", id)
+	if err := row.Scan(&user.Id, &user.FullName, &user.Login); err != nil {
+		return nil, tr.Trace(err)
+	}
+	return &user, nil
 }
 
 func (u *Users) GetId(login string) (int, error) {
-	// todo
 	var id int
 	if err := u.db.QueryRow("SELECT id FROM users WHERE login=?;", login).Scan(&id); err != nil {
 		return 0, tr.Trace(err)
 	}
 	return id, nil
 }
-
-// return [user1, user2, ...] sorted by name
 
 func (u *Users) GetAll() ([]*models.User, error) {
 	var users []*models.User
@@ -62,8 +62,16 @@ func (u *Users) GetAll() ([]*models.User, error) {
 	return users, nil
 }
 
-func (u *Users) Delete(id int) error {
-	// todo
+func (u *Users) Update(user models.User) error {
+	if _, err := u.db.Exec("UPDATE users SET name=?, login=? WHERE id=?;", user.FullName, user.Login, user.Id); err != nil {
+		return tr.Trace(err)
+	}
+	return nil
+}
 
+func (u *Users) Delete(id int) error {
+	if _, err := u.db.Exec("DELETE FROM users WHERE id=?;", id); err != nil {
+		return tr.Trace(err)
+	}
 	return nil
 }

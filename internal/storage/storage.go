@@ -10,18 +10,21 @@ import (
 )
 
 type Users interface {
-	NewUser(fullName string) error
-	GetById(id int) (user models.User, err error)
+	NewUser(name, login string) (int, error)
+	GetById(id int) (user *models.User, err error)
 	GetId(login string) (int, error)
 	GetAll() ([]*models.User, error)
+	Update(user models.User) error
 	Delete(id int) error
 }
 
 type Grades interface {
 	NewGrade(grade *models.Grade) (int, error)
+	GetAll() ([]models.Grade, error)
 	Find(opts models.GradesFindOpts) ([]*models.Grade, error)
 	Update(grade models.MinGrade) error
 	Delete(id int) error
+	DeleteByUser(userId int) error
 }
 
 type Subjects interface {

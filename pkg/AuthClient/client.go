@@ -47,7 +47,7 @@ func (c *Client) Login(ctx context.Context, login string, password string) (stri
 		Login:    login,
 		Password: password,
 	})
-	return req.GetToken(), err
+	return req.Token, err
 }
 
 func (c *Client) DeleteUser(ctx context.Context, login string) error {
@@ -58,12 +58,21 @@ func (c *Client) DeleteUser(ctx context.Context, login string) error {
 	return err
 }
 
+func (c *Client) UpdateLogin(ctx context.Context, login string, newLogin string) error {
+	_, err := c.authClient.UpdateLogin(ctx, &ssoV1.UpdateLoginRequest{
+		AppKey:   c.appKey,
+		Login:    login,
+		NewLogin: newLogin,
+	})
+	return err
+}
+
 func (c *Client) ParseToken(ctx context.Context, token string) (login string, err error) {
 	req, err := c.authClient.ParseToken(ctx, &ssoV1.ParseTokenRequest{
 		AppKey: c.appKey,
 		Token:  token,
 	})
-	return req.GetLogin(), err
+	return req.Login, err
 }
 
 func (c *Client) TestUserOnExist(ctx context.Context, login string) (bool, error) {
@@ -71,7 +80,7 @@ func (c *Client) TestUserOnExist(ctx context.Context, login string) (bool, error
 		AppKey: c.appKey,
 		Login:  login,
 	})
-	return req.GetExist(), err
+	return req.Exist, err
 }
 
 func (c *Client) GetPermission(ctx context.Context, login string) (int32, error) {
@@ -79,7 +88,7 @@ func (c *Client) GetPermission(ctx context.Context, login string) (int32, error)
 		AppKey: c.appKey,
 		Login:  login,
 	})
-	return req.GetPermission(), err
+	return req.Permission, err
 }
 
 func (c *Client) SetPermission(ctx context.Context, login string, permission int32) error {

@@ -32,6 +32,27 @@ func (g *Grades) NewGrade(grade *models.Grade) (int, error) {
 	return int(id), nil
 }
 
+func (g *Grades) GetAll() ([]models.Grade, error) {
+	rows, err := g.db.Query("SELECT * FROM grades ORDER BY day;")
+	var grades []models.Grade
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return grades, nil
+		}
+		return nil, tr.Trace(err)
+	}
+	for rows.Next() {
+		var grade models.Grade
+		if err := rows.Scan(&grade.Id, &grade.UserId, &grade.SubjectId,
+			&grade.Value, &grade.Day, &grade.Month, &grade.Course); err != nil {
+			return nil, tr.Trace(err)
+		}
+		grades = append(grades, grade)
+	}
+	return grades, nil
+
+}
+
 func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 	query := "SELECT * FROM grades WHERE " // начало sql запроса
 	var args []any                         // то что надо подставить в sql запрос
@@ -100,6 +121,13 @@ func (g *Grades) Update(grade models.MinGrade) error {
 
 func (g *Grades) Delete(id int) error {
 	if _, err := g.db.Exec("DELETE FROM grades WHERE id=?", id); err != nil {
+		return tr.Trace(err)
+	}
+	return nil
+}
+
+func (g *Grades) DeleteByUser(userId int) error {
+	if _, err := g.db.Exec("DELETE FROM grades WHERE user_id=?", userId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

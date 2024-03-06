@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <title>Пользователи</title>
+</head>
+<body>
+<style>
+    td {
+        padding: 0;
+        border: 1px solid black;
+    }
+    td > input {
+        border: 0;
+        padding: 0;
+        margin: 0;
+    }
+    td > input:focus {
+        outline: none;
+    }
+    td > select {
+        border: 0;
+    }
+    .dropdown-menu {
+        background: none;
+        border: 0;
+    }
+</style>
+
+<table id="users_tb">
+    <tr>
+
+    </tr>
+</table>
+
+<div style="display: flex">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-new-user">
+        Добавить пользователя
+    </button>
+    <button id="btn-save" class="btn btn-secondary" onclick="Save()">Сохранить</button>
+</div>
+
+<!-- Модальное окно -->
+<div class="modal fade" id="modal-new-user" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!--<div class="modal-header">
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">Заголовок модального окна</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div> -->
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-auto">
+                        <label for="in_name" class="form-label">Имя</label>
+                        <input type="text" id="in_name" class="form-control">
+                    </div>
+                    <div class="col-auto">
+                        <label for="in_perm" class="form-label">Права</label>
+                        <select id="in_perm" class="form-select form-control">
+                            <option value="0">Заблокирован</option>
+                            <option value="1" selected>Студент</option>
+                            <option value="2">Админ</option>
+                        </select>
+                    </div>
+                    <div></div>
+                    <div class="col-auto">
+                        <label for="in_login" class="form-label">Логин</label>
+                        <input type="text" id="in_login" class="form-control">
+                    </div>
+                    <div class="col-auto">
+                        <label for="in_pass" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="in_pass">
+                    </div>
+                </div>
+                <p id="form_message" style="color: red"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="modal-close" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="NewUser()">Создать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/functions.js"></script>
+<script>
+    let Users = []
+    let SaveList = []
+    let NewUserIdCounter = -1
+    let Perms = [
+        {"int": 0, "str": "Заблокирован"},
+        {"int": 1, "str": "Студент"},
+        {"int": 2, "str": "Админ"},
+    ]
+
+    function SetUsers() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/users/get_all");
+        xhr.send()
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (!handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при получении списка пользователей, статус код ответа ${xhr.status}`)) {
+                return
+            }
+            console.log(xhr.response)
+            Users = xhr.response
+            let table = document.getElementById("users_tb")
+            table.innerHTML = `<tr><td>Id</td><td>Имя</td><td>Логин</td><td>Права</td></tr>`
+            for (let user of Users) {
+                let tr = createUserTr(user)
+                table.appendChild(tr)
+            }
+        }
+
+    }
+    function createUserTr(user) {
+        let tr = document.createElement("tr")
+        tr.id = user.id
+
+        let tdId = document.createElement("td")
+        tdId.innerHTML = `<div class="dropdown">
+          <button style="border: 0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            ${user.to_id === undefined? user.id: user.to_id}
+          </button>
+          <ul class="dropdown-menu">
+            <a class="btn btn-danger btn-sm" href="javascript:DeleteUser(${user.id}, '${user.login}')">Удалить</a>
+          <ul/>
+        </div>`
+        tr.appendChild(tdId)
+
+        let tdName = document.createElement("td")
+        let inName = document.createElement("input")
+        inName.setAttribute("user_id", `${user.id}`)
+        inName.setAttribute("data_type", "name")
+        inName.value = user.name
+        tdName.appendChild(inName)
+        tr.appendChild(tdName)
+
+        let tdLog = document.createElement("td")
+        let inLog = document.createElement("input")
+        inLog.setAttribute("user_id", `${user.id}`)
+        inLog.setAttribute("data_type", "login")
+        inLog.value = user.login
+        tdLog.appendChild(inLog)
+        tr.appendChild(tdLog)
+
+        let tdPerm = document.createElement("td")
+        let select = document.createElement("select")
+        select.setAttribute("user_id", `${user.id}`)
+        for (let perm of Perms) {
+            let opt = document.createElement("option")
+            opt.value = perm.int
+            opt.innerText = perm.str
+            opt.classList.add("form-select")
+            if (perm.int === user.perm) {
+                opt.selected = true
+            }
+            select.appendChild(opt)
+        }
+
+        tdPerm.appendChild(select)
+        tr.appendChild(tdPerm)
+
+        tr.onchange = (ev) => {
+            let id = Number.parseInt(ev.target.parentElement.parentElement.id)
+            let name = ev.target.parentElement.parentElement.children[1].children[0].value
+            let login = ev.target.parentElement.parentElement.children[2].children[0].value
+            let perm = Number.parseInt(ev.target.parentElement.parentElement.children[3].children[0].value)
+
+            let f = true
+            for (let userS of SaveList) {
+                if (userS.id === id) {
+                    userS.name = name
+                    userS.login = login
+                    userS.perm = perm
+                    f = false
+                }
+            }
+            if (f) {
+                SaveList.push({
+                    "action": "update",
+                    "id":     id,
+                    "name":   name,
+                    "login":  login,
+                    "perm":   perm
+                })
+            }
+
+        }
+        return tr
+    }
+
+    function Save() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/users/save");
+        xhr.send(JSON.stringify(SaveList))
+        xhr.onload = () => {
+            if (handleResponseCode(xhr.status,  "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
+                SaveList = []
+                SetUsers()
+            }
+        }
+    }
+
+    function DeleteUser(id, login) {
+        let f = true
+        SaveList = SaveList.filter((el) => {
+            if (el.id === id){
+                f = false
+                return false
+            }
+            return true
+        })
+        if (f) {
+            SaveList.push({
+                "action": "del",
+                "id":     id,
+                "login": login,
+            })
+        }
+
+        document.getElementById(id).remove()
+    }
+
+
+    function NewUser() {
+        let in_name = document.getElementById("in_name");   let name = in_name.value;
+        let in_login = document.getElementById("in_login"); let login = in_login.value;
+        let in_pass = document.getElementById("in_pass");   let pass = in_pass.value;
+        let in_perm = document.getElementById("in_perm");   let perm = Number.parseInt(in_perm.value);
+
+        if (name === "" || login === "" || pass === "") {
+            document.getElementById("form_message").innerText = "Все поля должны быть заполнены!";
+            return
+        }
+        NewUserIdCounter--
+        SaveList.push({
+            "action": "new",
+            "id":     NewUserIdCounter,
+            "name":   name,
+            "login":  login,
+            "password": pass,
+            "perm":   perm,
+        })
+
+        document.getElementById("users_tb").appendChild(createUserTr({
+            "id":     NewUserIdCounter,
+            "to_id": "-",
+            "name":   name,
+            "login":  login,
+            "perm":   perm,
+        }))
+        document.getElementById("modal-close").click()
+        in_name.value = ""
+        in_login.value = ""
+        in_pass.value = ""
+        in_perm.value = 1
+    }
+
+    SetUsers()
+</script>
+<script src="/static/js/table_select.js"></script>
+</body>
+</html>

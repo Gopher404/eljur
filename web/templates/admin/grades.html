@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    <title>Title</title>
+    <title>Оценки</title>
     <style>
         * {
             margin: 2px;
@@ -111,6 +111,7 @@
 
 </div>
 </body>
+<script src="/static/js/functions.js"></script>
 <script>
     let SaveList = []
     let Users = []
@@ -207,12 +208,11 @@
 
     function GetGradesByMonthAndSubject() {
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/grades_by_month_and_subject");
+        xhr.open("POST", "/grades/by_month_and_subject");
         xhr.send(`{"month": ${month}, "course": ${course}, "subject_id": ${subject_id}}`);
         xhr.responseType = "json";
         xhr.onload = () => {
-            if (xhr.status !== 200) {
-                alert(`произошла ошибка при получении списка оценок, статус код ответа ${xhr.status}`)
+            if (!handleResponseCode(xhr.status, "/admin/login", `произошла ошибка при получении списка оценок, статус код ответа ${xhr.status}`)) {
                 return
             }
             console.log(xhr.response)
@@ -231,7 +231,6 @@
                 Days = xhr.response["days"].sort((a, b) => {return a - b})
 
                 for (let day of Days) {
-                    console.log(day)
                     row1_html += `<td class="date_cell" data-table-column="${i}" data-modal-id="del_column_dropdown-${i}">${formatDate(month, day)}</td>`
 
                     modals.innerHTML += `<div id="del_column_dropdown-${i}" class="my-dropdown-menu" style="display: none; position: absolute;">
@@ -332,17 +331,14 @@
         xhr.open("POST", "/grades/save");
         xhr.send(JSON.stringify(SaveList));
         xhr.onload = () => {
-            if (xhr.status !== 200) {
-                alert(`Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)
-            } else {
+            if (handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
                 SaveList = []
                 GetGradesByMonthAndSubject()
                 BtnSaveDisable()
             }
         }
         xhr.onerror = () => {
-            alert(`Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)
-
+            handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)
         }
     }
 
@@ -571,26 +567,11 @@
         document.cookie = `table=${course}.${subject_id}.${month}`
     }
 
-    function formatDate(month, day) {
-        if (day === 100) {
-            return "Итог"
-        }
-        let dayS = `${day}`
-        if (dayS.length === 1) {
-            dayS = "0" + dayS
-        }
-        let monthS = `${month}`
-        if (monthS.length === 1) {
-            monthS = "0" + monthS
-        }
-        return monthS + "." + dayS
-    }
-
 
 
     GetGradesByMonthAndSubject()
 
 
-
 </script>
+<script src="/static/js/table_select.js"></script>
 </html>

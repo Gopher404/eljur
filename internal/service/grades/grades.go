@@ -164,29 +164,38 @@ func (g *GradeService) Save(grades []*models.GradeToSave) error {
 	return nil
 }
 
-func (g *GradeService) SaveGrades(grades []*models.Grade) error {
+func (g *GradeService) NewUserGrades(userId int) error {
+	grades, err := g.gradesStorage.GetAll()
+	if err != nil {
+		return tr.Trace(err)
+	}
+
+	ignoreGrades := make(map[[4]int]struct{})
+
 	for _, grade := range grades {
-		if _, err := g.gradesStorage.NewGrade(grade); err != nil {
+		day := [4]int{grade.SubjectId, int(grade.Day), int(grade.Month), int(grade.Course)}
+		_, ok := ignoreGrades[day]
+		if ok {
+			continue
+		}
+		if _, err := g.gradesStorage.NewGrade(&models.Grade{
+			UserId:    userId,
+			SubjectId: grade.SubjectId,
+			Value:     "",
+			Day:       grade.Day,
+			Month:     grade.Month,
+			Course:    grade.Course,
+		}); err != nil {
 			return tr.Trace(err)
 		}
+		ignoreGrades[day] = struct{}{}
 	}
 	return nil
 }
 
-func (g *GradeService) UpdateGrades(grades []models.MinGrade) error {
-	for _, grade := range grades {
-		if err := g.gradesStorage.Update(grade); err != nil {
-			return tr.Trace(err)
-		}
-	}
-	return nil
-}
-
-func (g *GradeService) DeleteGrades(gradesId []int) error {
-	for _, id := range gradesId {
-		if err := g.gradesStorage.Delete(id); err != nil {
-			return tr.Trace(err)
-		}
+func (g *GradeService) DeleteByUser(userId int) error {
+	if err := g.gradesStorage.DeleteByUser(userId); err != nil {
+		return tr.Trace(err)
 	}
 	return nil
 }

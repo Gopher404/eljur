@@ -10,7 +10,11 @@ import (
 
 func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/grades",
-		h.logHandle(h.handleAdmin),
+		h.logHandle(h.handleAdminGrades),
+	).Methods("GET")
+
+	rtr.HandleFunc(url+"/users",
+		h.logHandle(h.handleAdminUsers),
 	).Methods("GET")
 
 	rtr.HandleFunc(url+"/login",
@@ -18,13 +22,14 @@ func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 			h.loginUser(w, r, models.PermAdmin, url+"/grades")
 		}),
 	).Methods("GET", "POST")
+
 }
 
-type adminTmpData struct {
+type adminGradesTmpData struct {
 	Subjects []models.Subject `json:"subjects"`
 }
 
-func (h *Handler) handleAdmin(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
 	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/admin/login")
@@ -35,7 +40,16 @@ func (h *Handler) handleAdmin(w http.ResponseWriter, r *http.Request) {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
-	h.renderTemplate(w, "admin.html", adminTmpData{
+	h.renderTemplate(w, "admin/grades.html", adminGradesTmpData{
 		Subjects: subjectsList,
 	})
+}
+
+func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
+	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
+		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
+		redirect(w, "/admin/login")
+		return
+	}
+	h.renderTemplate(w, "admin/users.html", nil)
 }

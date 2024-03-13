@@ -2,27 +2,17 @@ package logger
 
 import (
 	"eljur/internal/config"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"strings"
+	"sync"
 )
 
 func SetupLogger(cnf *config.LogConfig) (*slog.Logger, error) {
-	var out io.Writer
-
-	if cnf.Out == "cmd" {
-		out = os.Stdout
-	} else {
-		f, err := os.Open(cnf.Out)
-		if err != nil {
-			return nil, err
-		}
-		out = f
-	}
-
 	var opts slog.HandlerOptions
-	//opts.AddSource = true
 
 	switch cnf.Level {
 	case "debug":
@@ -43,6 +33,24 @@ func SetupLogger(cnf *config.LogConfig) (*slog.Logger, error) {
 
 	var handler slog.Handler
 
+	var out io.Writer
+	var outs []io.Writer
+	for _, s := range strings.Split(cnf.Out, ",") {
+		if s == "cmd" {
+			outs = append(outs, os.Stdout)
+		} else {
+			f, err := os.Create(s)
+			if err != nil {
+				return nil, err
+			}
+			outs = append(outs, f)
+			outFile = f
+		}
+	}
+	out = io.MultiWriter(outs...)
+
+	logType = cnf.Type
+
 	switch cnf.Type {
 	case "text":
 		handler = slog.NewTextHandler(out, &opts)
@@ -57,4 +65,38 @@ func SetupLogger(cnf *config.LogConfig) (*slog.Logger, error) {
 	l := slog.New(handler)
 
 	return l, nil
+}
+
+var logType string
+var outFile *os.File
+var mu sync.Mutex
+
+func GetLogs() ([]byte, error) {
+	if outFile == nil {
+		return nil, errors.New("log file not init")
+	}
+	mu.Lock()
+	_, _ = outFile.Seek(0, 0)
+	logs, err := io.ReadAll(outFile)
+	mu.Unlock()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if logType != "json" {
+		return logs, nil
+	}
+
+	logs = append([]byte("["), logs...)
+
+	newLine := byte(10)
+	l := len(logs)
+	for i, b := range logs {
+		if b == newLine && i+1 != l {
+			logs[i] = byte(44) // add ","
+		}
+	}
+	logs = append(logs, []byte("]")[0])
+	return logs, nil
 }

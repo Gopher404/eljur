@@ -86,7 +86,7 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		query += "course=? AND "
 		args = append(args, *opts.Course)
 	}
-	query = query[:len(query)-5] + " ORDER BY day ;" // убираем последний не нужный "AND"
+	query = query + " month<13 AND course<5 ORDER BY day ;"
 
 	var grades []*models.Grade
 
@@ -112,6 +112,10 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 	return grades, nil
 }
 
+func (g *Grades) FindResultGrades() {
+
+}
+
 func (g *Grades) Update(grade models.MinGrade) error {
 	if _, err := g.db.Exec("UPDATE grades SET value=? WHERE id=?", grade.Value, grade.Id); err != nil {
 		return tr.Trace(err)
@@ -128,6 +132,12 @@ func (g *Grades) Delete(id int) error {
 
 func (g *Grades) DeleteByUser(userId int) error {
 	if _, err := g.db.Exec("DELETE FROM grades WHERE user_id=?", userId); err != nil {
+		return tr.Trace(err)
+	}
+	return nil
+}
+func (g *Grades) DeleteBySubject(subjectId int) error {
+	if _, err := g.db.Exec("DELETE FROM grades WHERE subject_id=?", subjectId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

@@ -48,6 +48,7 @@ type SaveUsersIn struct {
 var ErrUserIsExist = errors.New("user is exist")
 
 func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
+
 	for _, user := range users {
 		fmt.Printf("%+v\n", user)
 		switch user.Action {

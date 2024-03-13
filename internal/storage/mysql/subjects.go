@@ -37,6 +37,24 @@ func (s *Subjects) GetAll() ([]models.Subject, error) {
 	var subjects []models.Subject
 	for rows.Next() {
 		var subject models.Subject
+		if err := rows.Scan(&subject.Id, &subject.Name, &subject.Semester, &subject.Course); err != nil {
+			return nil, tr.Trace(err)
+		}
+		subjects = append(subjects, subject)
+	}
+
+	return subjects, nil
+}
+
+func (s *Subjects) GetBySemester(semester int8, course int8) ([]models.MinSubject, error) {
+	rows, err := s.db.Query("SELECT id, name FROM subjects WHERE semester=? AND course=?", semester, course)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	var subjects []models.MinSubject
+	for rows.Next() {
+		var subject models.MinSubject
 		if err := rows.Scan(&subject.Id, &subject.Name); err != nil {
 			return nil, tr.Trace(err)
 		}
@@ -48,8 +66,20 @@ func (s *Subjects) GetAll() ([]models.Subject, error) {
 
 // create new subject
 
-func (s *Subjects) NewSubject(name string) error {
-	if _, err := s.db.Exec("INSERT INTO subjects (name) VALUES (?)", name); err != nil {
+func (s *Subjects) NewSubject(subject models.Subject) (int, error) {
+	res, err := s.db.Exec("INSERT INTO subjects (name, semester, course) VALUES (?, ?, ?)", subject.Name, subject.Semester, subject.Course)
+	if err != nil {
+		return 0, tr.Trace(err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, tr.Trace(err)
+	}
+	return int(id), nil
+}
+
+func (s *Subjects) Update(subject models.MinSubject) error {
+	if _, err := s.db.Exec("UPDATE subjects SET name=? WHERE id=?", subject.Name, subject.Id); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

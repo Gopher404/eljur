@@ -3,38 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/media/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="/static/js/functions.js"></script>
+    <style>
+        * {
+            margin: 2px;
+        }
+        .scroll-x {
+            padding: 4px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+        td {
+            padding: 0;
+            border: 1px solid black;
+        }
+        td > input {
+            border: 0;
+            padding: 0;
+            margin: 0;
+        }
+        td > input:focus {
+            outline: none;
+        }
+        td > select {
+            border: 0;
+        }
+        .dropdown-menu {
+            background: none;
+            border: 0;
+        }
+
+
+    </style>
     <title>Пользователи</title>
 </head>
 <body>
-<style>
-    td {
-        padding: 0;
-        border: 1px solid black;
-    }
-    td > input {
-        border: 0;
-        padding: 0;
-        margin: 0;
-    }
-    td > input:focus {
-        outline: none;
-    }
-    td > select {
-        border: 0;
-    }
-    .dropdown-menu {
-        background: none;
-        border: 0;
-    }
-</style>
+<header class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
+    <a href="/" class="d-flex align-items-center link-body-emphasis text-decoration-none">
+        <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none">
+            <img src="/static/media/favicon.ico" alt="">
+        </a>
+        <span class="fs-4">Электронный журнал</span>
+    </a>
+    <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/grades">Оценки</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none border-bottom" href="/admin/users">Пользователи</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/subjects">Предметы</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/logs">Журнал</a>
+        <a class="py-2 link-body-emphasis text-decoration-none" style="margin-right: 10px" href="/admin/login">Войти</a>
+    </nav>
+</header>
 
-<table id="users_tb">
-    <tr>
+<div class="scroll-x">
+    <table id="users_tb"></table>
+</div>
 
-    </tr>
-</table>
+
+
 
 <div style="display: flex">
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-new-user">
@@ -85,7 +115,7 @@
     </div>
 </div>
 
-<script src="/static/js/functions.js"></script>
+
 <script>
     let Users = []
     let SaveList = []
@@ -135,6 +165,7 @@
         let inName = document.createElement("input")
         inName.setAttribute("user_id", `${user.id}`)
         inName.setAttribute("data_type", "name")
+        inName.style.maxWidth = "150px"
         inName.value = user.name
         tdName.appendChild(inName)
         tr.appendChild(tdName)
@@ -143,6 +174,7 @@
         let inLog = document.createElement("input")
         inLog.setAttribute("user_id", `${user.id}`)
         inLog.setAttribute("data_type", "login")
+        inLog.style.maxWidth = "100px"
         inLog.value = user.login
         tdLog.appendChild(inLog)
         tr.appendChild(tdLog)
@@ -208,7 +240,7 @@
     function DeleteUser(id, login) {
         let f = true
         SaveList = SaveList.filter((el) => {
-            if (el.id === id){
+            if (el.id === id && el.action === "new"){
                 f = false
                 return false
             }

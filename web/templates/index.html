@@ -5,60 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eljur</title>
 </head>
-<script>
-    const Login = "{{ .Login }}"
-</script>
+
 <body>
-<div id="grades">
 
-</div>
 </body>
-<script>
-
-    let sortF = (a, b) => {
-        if (a["day"] > b["day"]) {
-            return 1
-        } else if (a["day"] < b["day"]) {
-            return -1
-        } else {
-            return 0
-        }
-    }
-
-    function getUserGradesByMonth(month, course) {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/user_grades_by_month");
-        xhr.send(`{"month": ${month}, "course": ${course}}`);
-        xhr.responseType = "json";
-        xhr.onload = () => {
-            if (xhr.status !== 200) {
-                alert("произошла ошибка при получении списка оценок")
-                return
-            }
-
-            console.log(xhr.response)
-
-            let html = `<table>`
-
-            for (let i = 0; i < xhr.response["subject_names"].length; i++) {
-                html += `<tr>`
-
-                html += `<td>${xhr.response["subject_names"][i]}</td>`
-
-                for (let grade of xhr.response["grades"][i]) {
-                    html += `<td>${grade.value}</td>`
-                }
-
-                html += `</tr>`
-            }
-
-            html += `</table>`
-            document.getElementById("grades").innerHTML = html
-        };
-    }
-
-
-
-</script>
-
 </html>

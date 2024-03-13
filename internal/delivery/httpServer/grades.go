@@ -5,7 +5,6 @@ import (
 	"eljur/internal/service/grades"
 	"eljur/pkg/tr"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
@@ -22,7 +21,7 @@ func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 		h.logHandle(h.handleGradesByMonthAndSubject),
 	).Methods("POST")
 
-	rtr.HandleFunc("/by_month_and_user",
+	rtr.HandleFunc(url+"/by_month_and_user",
 		h.handleGetUserGradesByMonth,
 	).Methods("POST")
 }
@@ -135,12 +134,11 @@ func (h *Handler) handleGetUserGradesByMonth(w http.ResponseWriter, r *http.Requ
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
-	h.l.Error(fmt.Sprintf("%+v", out))
+
 	resp, err := json.Marshal(out)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
-	h.l.Info(string(resp))
 	_, _ = w.Write(resp)
 }

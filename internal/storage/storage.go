@@ -25,12 +25,15 @@ type Grades interface {
 	Update(grade models.MinGrade) error
 	Delete(id int) error
 	DeleteByUser(userId int) error
+	DeleteBySubject(subjectId int) error
 }
 
 type Subjects interface {
 	GetById(id int) (string, error)
 	GetAll() ([]models.Subject, error)
-	NewSubject(name string) error
+	GetBySemester(semester int8, course int8) ([]models.MinSubject, error)
+	NewSubject(subject models.Subject) (int, error)
+	Update(subject models.MinSubject) error
 	Delete(id int) error
 }
 

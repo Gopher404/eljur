@@ -5,6 +5,7 @@ import (
 	"eljur/internal/storage"
 	"eljur/pkg/tr"
 	"errors"
+	"fmt"
 )
 
 type GradeService struct {
@@ -21,15 +22,15 @@ func New(gradesStorage storage.Grades, subjectsStorage storage.Subjects, userSto
 	}
 }
 
-type MinGradeStringWithDay struct {
+type MinGradeWithDay struct {
 	Id    int    `json:"id"`
 	Value string `json:"value"`
 	Day   int8   `json:"day"`
 }
 
 type UserGradesByMonth struct {
-	SubjectsNames []string                  `json:"subject_names"`
-	Grades        [][]MinGradeStringWithDay `json:"grades"`
+	SubjectsNames []string            `json:"subject_names"`
+	Grades        [][]MinGradeWithDay `json:"grades"`
 }
 
 type SubjectGradesByMonth struct {
@@ -57,7 +58,11 @@ func (g *GradeService) GetUserGradesByMonth(login string, month int8, course int
 		return nil, tr.Trace(err)
 	}
 
-	subjects, err := g.subjectsStorage.GetAll()
+	var semester int8 = 1
+	if month < 7 {
+		semester = 2
+	}
+	subjects, err := g.subjectsStorage.GetBySemester(semester, course)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -67,10 +72,10 @@ func (g *GradeService) GetUserGradesByMonth(login string, month int8, course int
 	for _, subject := range subjects {
 		userGradesByMonth.SubjectsNames = append(userGradesByMonth.SubjectsNames, subject.Name)
 
-		var newGradesSlice []MinGradeStringWithDay
+		var newGradesSlice []MinGradeWithDay
 		for _, grade := range grades {
 			if subject.Id == grade.SubjectId {
-				newGradesSlice = append(newGradesSlice, MinGradeStringWithDay{
+				newGradesSlice = append(newGradesSlice, MinGradeWithDay{
 					Id:    grade.Id,
 					Value: grade.Value,
 					Day:   grade.Day,
@@ -121,6 +126,14 @@ func (g *GradeService) GetByMonthAndSubject(month int8, subjectId int, course in
 	}
 
 	return &subjectGradesByMonth, nil
+}
+
+func (g *GradeService) GetResultGradesBySubject(subjectId int, course int8) {
+
+}
+
+func (g *GradeService) GetResultGradesByUser(userid int, course int8) {
+
 }
 
 func (g *GradeService) Save(grades []*models.GradeToSave) error {
@@ -193,8 +206,63 @@ func (g *GradeService) NewUserGrades(userId int) error {
 	return nil
 }
 
+func (g *GradeService) NewResGradesBySubject(subjectId int, semester int8, course int8) error {
+	var (
+		startMonth int8
+		endMonth   int8
+	)
+	if semester == 1 {
+		startMonth = 9
+		endMonth = 12
+	} else {
+		startMonth = 1
+		endMonth = 6
+	}
+	users, err := g.userStorage.GetAll()
+	if err != nil {
+		return tr.Trace(err)
+	}
+
+	for month := startMonth; month <= endMonth; month++ {
+		fmt.Println(month)
+		for _, user := range users {
+			if _, err := g.gradesStorage.NewGrade(&models.Grade{
+				UserId:    user.Id,
+				SubjectId: subjectId,
+				Value:     "",
+				Day:       100,
+				Month:     month,
+				Course:    course,
+			}); err != nil {
+				return tr.Trace(err)
+			}
+		}
+	}
+	for _, user := range users {
+		fmt.Println(user)
+		if _, err := g.gradesStorage.NewGrade(&models.Grade{
+			UserId:    user.Id,
+			SubjectId: subjectId,
+			Value:     "",
+			Day:       100,
+			Month:     semester + 100,
+			Course:    course,
+		}); err != nil {
+			return tr.Trace(err)
+		}
+	}
+	return nil
+}
+
 func (g *GradeService) DeleteByUser(userId int) error {
 	if err := g.gradesStorage.DeleteByUser(userId); err != nil {
+		return tr.Trace(err)
+	}
+	return nil
+}
+
+func (g *GradeService) DeleteBySubject(subjectId int) error {
+	if err := g.gradesStorage.DeleteBySubject(subjectId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

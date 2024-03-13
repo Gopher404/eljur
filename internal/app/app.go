@@ -24,7 +24,7 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 	}
 	gradesService := grades.New(s.Grades, s.Subjects, s.Users)
 	usersService := users.New(s.Users, authClient, gradesService)
-	subjectsService := subjects.New(s.Subjects)
+	subjectsService := subjects.New(s.Subjects, gradesService)
 
 	l.Info("setup services")
 

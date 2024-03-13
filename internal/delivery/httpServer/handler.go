@@ -1,7 +1,6 @@
 package httpServer
 
 import (
-	"eljur/internal/domain/models"
 	"eljur/internal/service/grades"
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
@@ -42,9 +41,7 @@ func (h *Handler) GetMuxRouter() *mux.Router {
 }
 
 func (h *Handler) setEndpoints(rtr *mux.Router) {
-	rtr.HandleFunc("/",
-		h.logHandle(h.handleIndex),
-	).Methods("GET")
+	rtr.HandleFunc("/", h.handleIndex).Methods("GET")
 
 	rtr.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./web/static/"))))
 
@@ -52,6 +49,7 @@ func (h *Handler) setEndpoints(rtr *mux.Router) {
 	h.setStudentEndpoints(rtr, "/student")
 	h.setGradesEndpoints(rtr, "/grades")
 	h.setUsersEndpoints(rtr, "/users")
+	h.setSubjectsEndpoints(rtr, "/subjects")
 }
 
 type Message struct {
@@ -63,15 +61,7 @@ type Login struct {
 }
 
 func (h *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
-	if !ok {
-		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, "/login_student")
-		return
-	}
-
-	h.renderTemplate(w, "index.html", Login{Login: login})
-
+	redirect(w, "/student/grades")
 }
 
 func (h *Handler) httpErr(w http.ResponseWriter, err error, status int) {

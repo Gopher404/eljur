@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/media/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <title>Оценки</title>
@@ -12,6 +13,13 @@
         }
         .grade_in {
             width: 45px;
+        }
+        #grades {
+            padding: 4px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
         }
         td {
             padding: 0;
@@ -53,52 +61,84 @@
     </style>
 </head>
 <body>
-
-<header>
-    <div class="menu" style="display: flex;">
-        <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Курс
-            </button>
-            <ul class="dropdown-menu">
-                <li><button class="dropdown-item" onclick="SelectCourse(1)" id="course-1">1</button></li>
-                <li><button class="dropdown-item" onclick="SelectCourse(2)" id="course-2">2</button></li>
-                <li><button class="dropdown-item" onclick="SelectCourse(3)" id="course-3">3</button></li>
-                <li><button class="dropdown-item" onclick="SelectCourse(4)" id="course-4">4</button></li>
-            </ul>
-        </div>
-
-        <div class="dropdown" id="subject-dropdown">
-            <button class="btn btn-secondary dropdown-toggle" id="subject-dropdown-lbl" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Предмет
-            </button>
-            <ul class="dropdown-menu" id="subject-dropdown-menu">
-
-            </ul>
-        </div>
-
-        <div class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Месяц
-            </button>
-            <ul class="dropdown-menu">
-                <li><button class="dropdown-item" onclick="SelectMonth(1)" id="month-1">Январь</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(2)" id="month-2">Февраль</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(3)" id="month-3">Март</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(4)" id="month-4">Апрель</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(5)" id="month-5">Май</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(6)" id="month-6">Июнь</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(7)" id="month-7">Июль</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(8)" id="month-8">Август</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(9)" id="month-9">Сентябрь</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(10)" id="month-10">Октябрь</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(11)" id="month-11">Ноябрь</button></li>
-                <li><button class="dropdown-item" onclick="SelectMonth(12)" id="month-12">Декабрь</button></li>
-            </ul>
-        </div>
-    </div>
-    <h2 id="subject_name"></h2>
+<header class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
+    <a href="/" class="d-flex align-items-center link-body-emphasis text-decoration-none">
+        <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none">
+            <img src="/static/media/favicon.ico" alt="">
+        </a>
+        <span class="fs-4">Электронный журнал</span>
+    </a>
+    <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none border-bottom" href="/admin/grades">Оценки</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/users">Пользователи</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/subjects">Предметы</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/logs">Журнал</a>
+        <a class="py-2 link-body-emphasis text-decoration-none" style="margin-right: 10px" href="/admin/login">Войти</a>
+    </nav>
 </header>
+
+<div class="menu" style="display: flex;">
+    <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Курс
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <div class="dropdown-item input-group" style="padding: 0; display: flex">
+                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(1)" id="course-1">1</button>
+                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(101)" id="course-101">итог</button>
+                </div>
+            </li>
+            <li>
+                <div class="dropdown-item input-group" style="padding: 0; display: flex">
+                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(2)" id="course-2">2</button>
+                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(102)" id="course-102">итог</button>
+                </div>
+            </li>
+            <li>
+                <div class="dropdown-item input-group" style="padding: 0; display: flex">
+                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(3)" id="course-3">3</button>
+                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(103)" id="course-103">итог</button>
+                </div>
+            </li>
+            <li>
+                <div class="dropdown-item input-group" style="padding: 0; display: flex">
+                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(4)" id="course-4">4</button>
+                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(104)" id="course-104">итог</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="dropdown" id="subject-dropdown">
+        <button class="btn btn-secondary dropdown-toggle" id="subject-dropdown-lbl" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Предмет
+        </button>
+        <ul class="dropdown-menu" id="subject-dropdown-menu">
+
+        </ul>
+    </div>
+
+    <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Месяц
+        </button>
+        <ul class="dropdown-menu">
+            <li><button class="dropdown-item" onclick="SelectMonth(9)" id="month-9">Сентябрь</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(10)" id="month-10">Октябрь</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(11)" id="month-11">Ноябрь</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(12)" id="month-12">Декабрь</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(1)" id="month-1">Январь</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(2)" id="month-2">Февраль</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(3)" id="month-3">Март</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(4)" id="month-4">Апрель</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(5)" id="month-5">Май</button></li>
+            <li><button class="dropdown-item" onclick="SelectMonth(6)" id="month-6">Июнь</button></li>
+        </ul>
+    </div>
+</div>
+<h2 id="subject_name"></h2>
+
 
 <div id="grades">
 
@@ -284,8 +324,9 @@
 
                 elem.onclick = () => {
                     let modal = document.getElementById(elem.getAttribute("data-modal-id"))
-                    modal.style.left = `${elem.offsetLeft-2}px`
-                    modal.style.top = `${elem.offsetHeight+22}px`
+                    let rect = elem.getBoundingClientRect()
+                    modal.style.left = `${rect.left-2}px`
+                    modal.style.top = `${rect.top-33}px`
                     modal.style.display =  "block"
                     setTimeout(
                         () => {

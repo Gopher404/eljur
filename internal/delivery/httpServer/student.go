@@ -13,13 +13,13 @@ func (h *Handler) setStudentEndpoints(rtr *mux.Router, url string) {
 	studentUrl = url
 
 	rtr.HandleFunc(url+"/login",
-		h.logHandle(func(w http.ResponseWriter, r *http.Request) {
+		h.mw(func(w http.ResponseWriter, r *http.Request) {
 			h.loginUser(w, r, models.PermStudent, url+"/grades")
 		}),
 	).Methods("GET", "POST")
 
 	rtr.HandleFunc(url+"/grades",
-		h.logHandle(h.handleStudentGrades),
+		h.mw(h.handleStudentGrades),
 	).Methods("GET")
 }
 

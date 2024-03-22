@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/static/media/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <title>Оценки</title>
     <style>
         * {
@@ -57,6 +60,31 @@
         .danger-tooltip {
             --bs-tooltip-bg: var(--bs-danger);
         }
+        .subject-list {
+            position: absolute;
+        }
+
+
+        .dropdown-submenu {
+            position: relative;
+        }
+
+        .dropdown-submenu a::after {
+            transform: rotate(-90deg);
+            position: absolute;
+            right: 6px;
+            top: .8em;
+        }
+
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-left: .1rem;
+            margin-right: .1rem;
+        }
+        li > p {
+            margin: 0;
+        }
 
     </style>
 </head>
@@ -72,70 +100,126 @@
         <a class="me-3 py-2 link-body-emphasis text-decoration-none border-bottom" href="/admin/grades">Оценки</a>
         <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/users">Пользователи</a>
         <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/subjects">Предметы</a>
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/logs">Журнал</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/metric">Metric</a>
         <a class="py-2 link-body-emphasis text-decoration-none" style="margin-right: 10px" href="/admin/login">Войти</a>
     </nav>
 </header>
 
-<div class="menu" style="display: flex;">
-    <div class="dropdown">
-        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Курс
+<div class="btn-group" role="group">
+    {{ range $i, $el := .Subjects }}
+    {{ $course := len (printf "a%*s" $i "") }}
+    <div class="btn-group" style="display: block">
+        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ $course }} Курс
         </button>
         <ul class="dropdown-menu">
-            <li>
-                <div class="dropdown-item input-group" style="padding: 0; display: flex">
-                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(1)" id="course-1">1</button>
-                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(101)" id="course-101">итог</button>
-                </div>
+            {{ $sem := index $el 0 }}
+            <li class="dropdown-submenu">
+                <a class="dropdown-item dropdown-toggle">Сентябрь</a>
+                <ul class="dropdown-menu">
+                    {{ range $sem }}
+                    <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 9, {{ .Id }})">{{ .Name }}</a></li>
+                    {{ else }}
+                    <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                    {{ end }}
+                </ul>
             </li>
-            <li>
-                <div class="dropdown-item input-group" style="padding: 0; display: flex">
-                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(2)" id="course-2">2</button>
-                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(102)" id="course-102">итог</button>
-                </div>
+            <li class="dropdown-submenu">
+                <a class="dropdown-item dropdown-toggle">Октябрь</a>
+                <ul class="dropdown-menu">
+                    {{ range $sem }}
+                    <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 10, {{ .Id }})">{{ .Name }}</a></li>
+                    {{ else }}
+                    <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                    {{ end }}
+                </ul>
             </li>
-            <li>
-                <div class="dropdown-item input-group" style="padding: 0; display: flex">
-                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(3)" id="course-3">3</button>
-                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(103)" id="course-103">итог</button>
-                </div>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Ноябрь</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 11, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
             </li>
-            <li>
-                <div class="dropdown-item input-group" style="padding: 0; display: flex">
-                    <button class="dropdown-item" style="width: 60%" onclick="SelectCourse(4)" id="course-4">4</button>
-                    <button class="dropdown-item" style="width: 40%" onclick="SelectCourse(104)" id="course-104">итог</button>
-                </div>
+            <li class="dropdown-submenu">
+                <a class="dropdown-item dropdown-toggle">Декабрь</a>
+                <ul class="dropdown-menu">
+                    {{ range $sem }}
+                    <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 12, {{ .Id }})">{{ .Name }}</a></li>
+                    {{ else }}
+                    <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                    {{ end }}
+                </ul>
             </li>
+
+            {{ $sem := index $el 1 }}
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Январь</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 1, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Февраль</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 2, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Март</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 3, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Апрель</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 4, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Май</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 5, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+            <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle">Июнь</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectGrades({{ $course }}, 6, {{ .Id }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
+
         </ul>
     </div>
-
-    <div class="dropdown" id="subject-dropdown">
-        <button class="btn btn-secondary dropdown-toggle" id="subject-dropdown-lbl" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Предмет
-        </button>
-        <ul class="dropdown-menu" id="subject-dropdown-menu">
-
-        </ul>
-    </div>
-
-    <div class="dropdown">
-        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Месяц
-        </button>
-        <ul class="dropdown-menu">
-            <li><button class="dropdown-item" onclick="SelectMonth(9)" id="month-9">Сентябрь</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(10)" id="month-10">Октябрь</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(11)" id="month-11">Ноябрь</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(12)" id="month-12">Декабрь</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(1)" id="month-1">Январь</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(2)" id="month-2">Февраль</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(3)" id="month-3">Март</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(4)" id="month-4">Апрель</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(5)" id="month-5">Май</button></li>
-            <li><button class="dropdown-item" onclick="SelectMonth(6)" id="month-6">Июнь</button></li>
-        </ul>
-    </div>
+    {{ end }}
 </div>
 <h2 id="subject_name"></h2>
 
@@ -151,6 +235,26 @@
 
 </div>
 </body>
+
+
+<script>
+    $('.dropdown-menu a.dropdown-toggle').on('click', function(e) {
+        if (!$(this).next().hasClass('show')) {
+            $(this).parents('.dropdown-menu').first().find('.show').removeClass('show');
+        }
+
+        let $subMenu = $(this).next('.dropdown-menu');
+        $subMenu.toggleClass('show');
+
+
+        $(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function(e) {
+            $('.dropdown-submenu .show').removeClass('show');
+        });
+
+
+        return false;
+    });
+</script>
 <script src="/static/js/functions.js"></script>
 <script>
     let SaveList = []
@@ -165,6 +269,20 @@
     const ActionUpdate = 0
     const ActionDelete = 1
     const ActionNew = 2
+    const MonthNames = {
+        1: "Январь",
+        2: "Февраль",
+        3: "Март",
+        4: "Апрель",
+        5: "Май",
+        6: "Июнь",
+        7: "Июль",
+        8: "Август",
+        9: "Сентябрь",
+        10: "Октябрь",
+        11: "Ноябрь",
+        12: "Декабрь",
+    }
 
 
     let btn_plus = `
@@ -180,14 +298,9 @@
         <button class="btn-close" onclick="DropdownShow('new_column_dropdown')"
         style="margin-left: 90%;"></button>
     </div>
-
          <div class="mb-3">
         <label for="input-num-of-day" class="form-label">Введите число</label>
         <input type="number" class="form-control" id="input-num-of-day" min="1" max="31" value="1">
-    </div>
-    <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="input-num-of-day-check">
-        <label class="form-check-label" for="input-num-of-day-check">Колонка "Итог"</label>
     </div>
     <button class="btn btn-primary" onclick="CreateColumn();DropdownShow('new_column_dropdown');">Создать</button>
     </div>
@@ -196,46 +309,6 @@
 
     getTableFromCookies()
 
-    document.getElementById(`month-${month}`).classList.add("active")
-    document.getElementById(`course-${course}`).classList.add("active")
-
-    let subjects_list = {
-    {{ range .Subjects }}
-        "{{ .Id }}": "{{.Name}}",
-    {{ end }}
-    }
-
-    let list = document.getElementById("subject-dropdown-menu")
-    for (let id of Object.keys(subjects_list)) {
-        list.innerHTML += `<li><button class="dropdown-item" onclick="SelectSubject(${id})" id="subject-${id}">${subjects_list[id]}</button></li>`
-
-    }
-    document.getElementById(`subject-${subject_id}`).classList.add("active")
-
-
-    function SelectSubject(id) {
-        document.getElementById(`subject-${subject_id}`).classList.remove("active")
-        document.getElementById(`subject-${id}`).classList.add("active");
-        subject_id = id;
-        setTableCookie()
-        GetGradesByMonthAndSubject()
-    }
-
-    function SelectMonth(month_in) {
-        document.getElementById(`month-${month}`).classList.remove("active")
-        document.getElementById(`month-${month_in}`).classList.add("active");
-        month = month_in;
-        setTableCookie()
-        GetGradesByMonthAndSubject()
-    }
-
-    function SelectCourse(course_in) {
-        document.getElementById(`course-${course}`).classList.remove("active")
-        document.getElementById(`course-${course_in}`).classList.add("active");
-        course = course_in;
-        setTableCookie()
-        GetGradesByMonthAndSubject()
-    }
 
     function DropdownShow(id) {
         let menu = document.getElementById(id)
@@ -244,6 +317,14 @@
         } else {
             menu.classList.add("show")
         }
+    }
+
+    function SelectGrades(in_course, in_month, in_subject) {
+        course = in_course
+        month = in_month
+        subject_id = in_subject
+        GetGradesByMonthAndSubject()
+        setTableCookie()
     }
 
     function GetGradesByMonthAndSubject() {
@@ -256,7 +337,7 @@
                 return
             }
             console.log(xhr.response)
-            document.getElementById("subject_name").innerText = xhr.response["subject_name"] + ", " + course + " курс, " + document.getElementById(`month-${month}`).innerText
+            document.getElementById("subject_name").innerText = xhr.response["subject_name"] + ", " + course + " курс, " + MonthNames[month]
 
             Days = []
 
@@ -314,10 +395,7 @@
 
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
             const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-            document.getElementById("input-num-of-day-check").onclick = () => {
-                let input = document.getElementById("input-num-of-day")
-                input.disabled = !input.disabled
-            }
+
 
             let date_cells = document.querySelectorAll('[class="date_cell"]')
             date_cells.forEach((elem) => {

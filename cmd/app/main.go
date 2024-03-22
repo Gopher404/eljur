@@ -3,7 +3,7 @@ package main
 import (
 	"eljur/internal/app"
 	"eljur/internal/config"
-	"eljur/internal/logger"
+	"eljur/internal/pkg/logger"
 	"fmt"
 )
 

@@ -2,7 +2,7 @@ package httpServer
 
 import (
 	"eljur/internal/domain/models"
-	"eljur/internal/logger"
+	"eljur/internal/pkg/metric"
 	"eljur/pkg/tr"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -13,30 +13,30 @@ var adminUrl string
 
 func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/grades",
-		h.logHandle(h.handleAdminGrades),
+		h.mw(h.handleAdminGrades),
 	).Methods("GET")
 
 	rtr.HandleFunc(url+"/users",
-		h.logHandle(h.handleAdminUsers),
+		h.mw(h.handleAdminUsers),
 	).Methods("GET")
 
 	rtr.HandleFunc(url+"/subjects",
-		h.logHandle(h.handleAdminSubjects),
+		h.mw(h.handleAdminSubjects),
 	).Methods("GET")
 
 	rtr.HandleFunc(url+"/login",
-		h.logHandle(func(w http.ResponseWriter, r *http.Request) {
+		h.mw(func(w http.ResponseWriter, r *http.Request) {
 			h.loginUser(w, r, models.PermAdmin, url+"/grades")
 		}),
 	).Methods("GET", "POST")
-	rtr.HandleFunc(url+"/logs",
-		h.logHandle(h.handleAdminLogs),
+	rtr.HandleFunc(url+"/metric",
+		h.mw(h.handleAdminMetric),
 	).Methods("GET")
 
 }
 
 type adminGradesTmpData struct {
-	Subjects []models.Subject `json:"subjects"`
+	Subjects *[4][2][]models.MinSubject `json:"subjects"`
 }
 
 func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
@@ -73,20 +73,15 @@ func (h *Handler) handleAdminSubjects(w http.ResponseWriter, r *http.Request) {
 	h.renderTemplate(w, "admin/subjects.html", nil)
 }
 
-func (h *Handler) handleAdminLogs(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
 	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, adminUrl+"/login")
 		return
 	}
-	logs, err := logger.GetLogs()
+	m, err := metric.GetMetric()
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
-		return
 	}
-	h.renderTemplate(w, "admin/logs.html", struct {
-		Logs string
-	}{
-		Logs: string(logs),
-	})
+	h.renderTemplate(w, "admin/metric.html", m)
 }

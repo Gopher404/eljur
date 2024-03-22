@@ -12,11 +12,11 @@ import (
 
 func (h *Handler) setUsersEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/get_all",
-		h.logHandle(h.handleUsersGetAll),
+		h.mw(h.handleUsersGetAll),
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/save",
-		h.logHandle(h.Save),
+		h.mw(h.Save),
 	).Methods("POST")
 }
 

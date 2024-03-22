@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"eljur/internal/pkg/metric"
 	"eljur/internal/service/grades"
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
@@ -70,6 +71,7 @@ func (h *Handler) httpErr(w http.ResponseWriter, err error, status int) {
 }
 
 func (h *Handler) renderTemplate(w http.ResponseWriter, fileName string, data any) {
+	metric.HandleRender()
 	tmp, err := template.ParseFiles(fmt.Sprintf("web/templates/%s", fileName))
 	if err != nil {
 		h.httpErr(w, err, http.StatusInternalServerError)

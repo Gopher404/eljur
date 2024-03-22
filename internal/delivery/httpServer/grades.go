@@ -12,13 +12,13 @@ import (
 
 func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/save",
-		h.logHandle(func(w http.ResponseWriter, r *http.Request) {
+		h.mw(func(w http.ResponseWriter, r *http.Request) {
 			h.handleGradesSave(w, r)
 		}),
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/by_month_and_subject",
-		h.logHandle(h.handleGradesByMonthAndSubject),
+		h.mw(h.handleGradesByMonthAndSubject),
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/by_month_and_user",

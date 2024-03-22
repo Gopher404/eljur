@@ -10,7 +10,7 @@ function formatDate(month, day) {
     if (monthS.length === 1) {
         monthS = "0" + monthS
     }
-    return monthS + "." + dayS
+    return dayS + "." + monthS
 }
 
 function handleResponseCode(code, urlToLogin, message) {

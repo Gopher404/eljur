@@ -3,6 +3,7 @@ package app
 import (
 	"eljur/internal/config"
 	"eljur/internal/delivery/httpServer"
+	"eljur/internal/pkg/metric"
 	"eljur/internal/service/grades"
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
@@ -36,6 +37,8 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 	)
 
 	server := httpServer.NewServer(handler.GetMuxRouter(), &cnf.Bind)
+
+	metric.CountRPS()
 
 	l.Info("run server")
 	if err := server.Run(); err != nil {

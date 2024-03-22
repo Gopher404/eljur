@@ -31,12 +31,20 @@ func (s *SubjectService) GetSubject(id int) (string, error) {
 	return name, nil
 }
 
-func (s *SubjectService) GetAllSubjects() ([]models.Subject, error) {
+func (s *SubjectService) GetAllSubjects() (*[4][2][]models.MinSubject, error) {
 	subjects, err := s.subjectStorage.GetAll()
+	var structSubjects [4][2][]models.MinSubject
+	for _, subject := range subjects {
+		structSubjects[subject.Course-1][subject.Semester-1] = append(structSubjects[subject.Course-1][subject.Semester-1],
+			models.MinSubject{
+				Id:   subject.Id,
+				Name: subject.Name,
+			})
+	}
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	return subjects, nil
+	return &structSubjects, nil
 }
 
 func (s *SubjectService) GetBySemester(semester int8, course int8) ([]models.MinSubject, error) {

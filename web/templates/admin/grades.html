@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,9 +24,31 @@
             overflow-y: hidden;
             white-space: nowrap;
         }
+        table {
+            border-collapse: collapse;
+            border: none;
+        }
+        table tr:first-child td {
+            border-top: none;
+        }
+        table tr:last-child td {
+            border-bottom: none;
+        }
+        table tr td:first-child {
+            border-left: none;
+        }
+        table tr td:last-child {
+            border-right: none;
+        }
+
+        table tr:nth-child(even) * {
+            background-color: var(--bs-gray-200);
+        }
+
+
         td {
             padding: 0;
-            border: 1px solid black;
+            border: 1px solid var(--bs-gray-800);
         }
         td > input {
             border: 0;
@@ -46,7 +68,7 @@
             background: #337AB7;
             cursor: pointer;
             outline: 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.2);
+
         }
         .bt_plus svg {
             stroke: #BFE2FF;
@@ -86,6 +108,12 @@
             margin: 0;
         }
 
+        .vert {
+            writing-mode: vertical-rl;
+            text-align: center;
+        }
+
+
     </style>
 </head>
 <body>
@@ -109,7 +137,7 @@
     {{ range $i, $el := .Subjects }}
     {{ $course := len (printf "a%*s" $i "") }}
     <div class="btn-group" style="display: block">
-        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {{ $course }} Курс
         </button>
         <ul class="dropdown-menu">
@@ -216,10 +244,22 @@
                 {{ end }}
             </ul>
         </li>
-
+        {{ $sem := index $el 2 }}
+        </li>
+        <li class="dropdown-submenu">
+            <a class="dropdown-item dropdown-toggle text-danger">Итог</a>
+            <ul class="dropdown-menu">
+                {{ range $sem }}
+                <li><a class="dropdown-item" onclick="SelectResGrades({{ .Id }}, {{ $course }})">{{ .Name }}</a></li>
+                {{ else }}
+                <li><p class="dropdown-item">Предметы ещё не добавлены</p></li>
+                {{ end }}
+            </ul>
+        </li>
         </ul>
     </div>
     {{ end }}
+
 </div>
 <h2 id="subject_name"></h2>
 
@@ -325,6 +365,72 @@
         subject_id = in_subject
         GetGradesByMonthAndSubject()
         setTableCookie()
+    }
+
+    function SelectResGrades(in_subject,  in_course) {
+        course = in_course
+        subject_id = in_subject
+        month = 100
+        GetResGrades()
+        setTableCookie()
+    }
+
+    function GetResGrades() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/grades/res_by_subject");
+        xhr.send(`{"course": ${course}, "subject_id": ${subject_id}}`);
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (!handleResponseCode(xhr.status, "/admin/login", `произошла ошибка при получении списка оценок, статус код ответа ${xhr.status}`)) {
+                return
+            }
+            console.log(xhr.response)
+            document.getElementById("subject_name").innerText = `Итог за ${course} курс, ${xhr.response["subject_name"]}`
+            let table = document.createElement("table")
+            let row1 = document.createElement("tr")
+            row1.setAttribute("style", "height: 70px")
+            row1.innerHTML = `
+    <td>Студенты</td>
+    <td class="vert">Сентябрь</td>
+    <td class="vert">Октябрь</td>
+    <td class="vert">Ноябрь</td>
+    <td class="vert">Декабрь</td>
+    <td class="vert">1 семестр</td>
+    <td class="vert">Январь</td>
+    <td class="vert">Февраль</td>
+    <td class="vert">Март</td>
+    <td class="vert">Апрель</td>
+    <td class="vert">Май</td>
+    <td class="vert">Июнь</td>
+    <td class="vert">2 семестр</td>
+    <td class="vert text-danger">ИТОГ</td>
+ `
+            table.appendChild(row1)
+
+            for (let userGrades of xhr.response["users"]) {
+                let row = document.createElement("tr")
+                row.innerHTML += `<td>${userGrades.user_name}</td>`
+                for (let month = 8; month < 12; month++) {
+                    let grade = CreateGradeTd(userGrades.month_res[month].id, userGrades.month_res[month].value)
+                    row.appendChild(grade)
+                }
+                let grade = CreateGradeTd(userGrades.semester_res[0].id, userGrades.semester_res[0].value)
+                row.appendChild(grade)
+                for (let month = 0; month < 6; month++) {
+                    let grade = CreateGradeTd(userGrades.month_res[month].id, userGrades.month_res[month].value)
+                    row.appendChild(grade)
+                }
+                grade = CreateGradeTd(userGrades.semester_res[1].id, userGrades.semester_res[1].value)
+                row.appendChild(grade)
+                grade = CreateGradeTd(userGrades.course_res.id, userGrades.course_res.value)
+                row.appendChild(grade)
+
+                table.appendChild(row)
+            }
+            let div = document.getElementById("grades")
+            div.innerHTML = ""
+            div.appendChild(table)
+        }
     }
 
     function GetGradesByMonthAndSubject() {
@@ -452,7 +558,7 @@
         xhr.onload = () => {
             if (handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
                 SaveList = []
-                GetGradesByMonthAndSubject()
+                SetGrades()
                 BtnSaveDisable()
             }
         }
@@ -461,6 +567,13 @@
         }
     }
 
+    function SetGrades() {
+        if (month === 100) {
+            GetResGrades()
+        } else {
+            GetGradesByMonthAndSubject()
+        }
+    }
 
     function OnUpdateGrade(id, value) {
         for (let i = 0; i < SaveList.length; i++) {
@@ -687,8 +800,8 @@
     }
 
 
+    SetGrades()
 
-    GetGradesByMonthAndSubject()
 
 
 </script>

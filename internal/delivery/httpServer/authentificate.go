@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"eljur/internal/domain/models"
 	"eljur/pkg/tr"
 	"net/http"
 	"time"
@@ -32,9 +33,23 @@ func (h *Handler) authenticate(r *http.Request, perm int32) (login string, ok bo
 	return login, true
 }
 
+type loginTmpIn struct {
+	Message       string
+	OtherUserHref string
+	OtherUserMess string
+}
+
 func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, outUrl string) {
+	var tmpData loginTmpIn
+	if perm == models.PermAdmin {
+		tmpData.OtherUserHref = "/student/login"
+		tmpData.OtherUserMess = "Войти как студент"
+	} else {
+		tmpData.OtherUserHref = "/admin/login"
+		tmpData.OtherUserMess = "Войти как админ"
+	}
 	if r.Method == "GET" {
-		h.renderTemplate(w, "login.html", Message{})
+		h.renderTemplate(w, "login.html", tmpData)
 	} else {
 		if err := r.ParseForm(); err != nil {
 			h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
@@ -46,14 +61,16 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 
 		token, err := h.auth.Login(r.Context(), login, pass)
 		if err != nil {
-			h.renderTemplate(w, "login.html", Message{Mess: "Неверный логин или пароль"})
+			tmpData.Message = "Неверный логин или пароль"
+			h.renderTemplate(w, "login.html", tmpData)
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}
 
 		realPerm, err := h.auth.GetPermission(r.Context(), login)
 		if err != nil || realPerm < perm {
-			h.renderTemplate(w, "login.html", Message{Mess: "Недостаточно прав"})
+			tmpData.Message = "Недостаточно прав"
+			h.renderTemplate(w, "login.html", tmpData)
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}

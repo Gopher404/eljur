@@ -44,7 +44,7 @@ func (h *Handler) handleSubjectsGetBySemester(w http.ResponseWriter, r *http.Req
 		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
 		return
 	}
-	subjects, err := h.subjectService.GetBySemester(in.Semester, in.Course)
+	subjects, err := h.subjectService.GetBySemester(r.Context(), in.Semester, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 	}
@@ -73,7 +73,7 @@ func (h *Handler) handleSubjectsSave(w http.ResponseWriter, r *http.Request) {
 		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
 		return
 	}
-	if err := h.subjectService.Save(in); err != nil {
+	if err := h.subjectService.Save(r.Context(), in); err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 	}
 }

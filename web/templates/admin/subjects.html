@@ -62,6 +62,7 @@
         <ul class="dropdown-menu">
             <li><button class="dropdown-item" onclick="SelectSemester(1)" id="semester-1">1</button></li>
             <li><button class="dropdown-item" onclick="SelectSemester(2)" id="semester-2">2</button></li>
+            <li><button class="dropdown-item" onclick="SelectSemester(3)" id="semester-3">ИТОГ</button></li>
         </ul>
     </div>
 </div>
@@ -212,6 +213,7 @@
             "name": inName.value,
             }
         ));
+
         UpdateList.push({
             "action": "new",
             "id": IdCounter,

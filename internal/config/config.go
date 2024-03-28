@@ -1,6 +1,9 @@
 package config
 
-import "github.com/ilyakaznacheev/cleanenv"
+import (
+	"github.com/ilyakaznacheev/cleanenv"
+	"time"
+)
 
 type Config struct {
 	Bind BindConfig `yaml:"bind"`
@@ -10,8 +13,9 @@ type Config struct {
 }
 
 type BindConfig struct {
-	Ip   string `yaml:"ip"`
-	Port string `yaml:"port"`
+	Ip      string        `yaml:"ip"`
+	Port    string        `yaml:"port"`
+	TimeOut time.Duration `yaml:"time_out"`
 }
 
 type DBConfig struct {

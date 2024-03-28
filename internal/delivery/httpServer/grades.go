@@ -24,6 +24,11 @@ func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/by_month_and_user",
 		h.handleGetUserGradesByMonth,
 	).Methods("POST")
+
+	rtr.HandleFunc(url+"/res_by_subject",
+		h.handleGetResGradesBySubject,
+	).Methods("POST")
+
 }
 
 func (h *Handler) handleGradesSave(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +49,7 @@ func (h *Handler) handleGradesSave(w http.ResponseWriter, r *http.Request) {
 		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
 		return
 	}
-	if err := h.gradesService.Save(in); err != nil {
+	if err := h.gradesService.Save(r.Context(), in); err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
@@ -81,13 +86,13 @@ func (h *Handler) handleGradesByMonthAndSubject(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	res, err := h.gradesService.GetByMonthAndSubject(in.Month, in.SubjectId, in.Course)
+	res, err := h.gradesService.GetByMonthAndSubject(r.Context(), in.Month, in.SubjectId, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
 
-	subjectName, err := h.subjectService.GetSubject(in.SubjectId)
+	subjectName, err := h.subjectService.GetSubject(r.Context(), in.SubjectId)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
@@ -129,12 +134,49 @@ func (h *Handler) handleGetUserGradesByMonth(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	out, err := h.gradesService.GetUserGradesByMonth(login, in.Month, in.Course)
+	out, err := h.gradesService.GetUserGradesByMonth(r.Context(), login, in.Month, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
 
+	resp, err := json.Marshal(out)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(resp)
+}
+
+type getResGradesBySubject struct {
+	SubjectId int  `json:"subject_id"`
+	Course    int8 `json:"course"`
+}
+
+func (h *Handler) handleGetResGradesBySubject(w http.ResponseWriter, r *http.Request) {
+	_, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	var in getResGradesBySubject
+	if err := json.Unmarshal(body, &in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	out, err := h.gradesService.GetResultGradesBySubject(r.Context(), in.SubjectId, in.Course)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
 	resp, err := json.Marshal(out)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)

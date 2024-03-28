@@ -3,6 +3,7 @@ package AuthClient
 import (
 	"context"
 	ssoV1 "eljur/pkg/proto/sso"
+	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"net"
@@ -13,6 +14,10 @@ type Client struct {
 	authClient       ssoV1.AuthClient
 	permissionClient ssoV1.PermissionsClient
 }
+
+var (
+	ErrNilResponse = errors.New("nil response")
+)
 
 func New(host string, port string, appKey string) (*Client, error) {
 	addr := net.JoinHostPort(host, port)
@@ -47,6 +52,9 @@ func (c *Client) Login(ctx context.Context, login string, password string) (stri
 		Login:    login,
 		Password: password,
 	})
+	if err != nil {
+		return "", err
+	}
 	return req.Token, err
 }
 
@@ -64,6 +72,7 @@ func (c *Client) UpdateLogin(ctx context.Context, login string, newLogin string)
 		Login:    login,
 		NewLogin: newLogin,
 	})
+
 	return err
 }
 
@@ -72,6 +81,9 @@ func (c *Client) ParseToken(ctx context.Context, token string) (login string, er
 		AppKey: c.appKey,
 		Token:  token,
 	})
+	if err != nil {
+		return "", err
+	}
 	return req.Login, err
 }
 
@@ -80,6 +92,9 @@ func (c *Client) TestUserOnExist(ctx context.Context, login string) (bool, error
 		AppKey: c.appKey,
 		Login:  login,
 	})
+	if err != nil {
+		return false, err
+	}
 	return req.Exist, err
 }
 
@@ -88,6 +103,9 @@ func (c *Client) GetPermission(ctx context.Context, login string) (int32, error)
 		AppKey: c.appKey,
 		Login:  login,
 	})
+	if err != nil {
+		return 0, err
+	}
 	return req.Permission, err
 }
 

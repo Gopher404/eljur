@@ -1,26 +1,28 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
 	"eljur/internal/domain/models"
+	"eljur/internal/storage/transaction"
 	"eljur/pkg/tr"
 	"errors"
 )
 
 type Grades struct {
-	db *sql.DB
+	transaction.TxStorage
 }
 
 func NewGradesStorage(db *sql.DB) *Grades {
-	return &Grades{
-		db: db,
-	}
+	var s Grades
+	s.DB = db
+	return &s
 }
 
 // create new grade
 
-func (g *Grades) NewGrade(grade *models.Grade) (int, error) {
-	r, err := g.db.Exec("INSERT INTO grades (user_id, subject_id, value, day, month, course) VALUES (?, ?, ?, ?, ?, ?)",
+func (g *Grades) NewGrade(ctx context.Context, grade *models.Grade) (int, error) {
+	r, err := g.Exec(ctx, "INSERT INTO grades (user_id, subject_id, value, day, month, course) VALUES (?, ?, ?, ?, ?, ?)",
 		grade.UserId, grade.SubjectId, grade.Value, grade.Day, grade.Month, grade.Course)
 	if err != nil {
 		return 0, tr.Trace(err)
@@ -32,8 +34,8 @@ func (g *Grades) NewGrade(grade *models.Grade) (int, error) {
 	return int(id), nil
 }
 
-func (g *Grades) GetAll() ([]models.Grade, error) {
-	rows, err := g.db.Query("SELECT * FROM grades ORDER BY day;")
+func (g *Grades) GetAll(ctx context.Context) ([]models.Grade, error) {
+	rows, err := g.Query(ctx, "SELECT * FROM grades ORDER BY day;")
 	var grades []models.Grade
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -53,7 +55,7 @@ func (g *Grades) GetAll() ([]models.Grade, error) {
 
 }
 
-func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
+func (g *Grades) Find(ctx context.Context, opts models.GradesFindOpts) ([]*models.Grade, error) {
 	query := "SELECT * FROM grades WHERE " // начало sql запроса
 	var args []any                         // то что надо подставить в sql запрос
 
@@ -86,11 +88,12 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 		query += "course=? AND "
 		args = append(args, *opts.Course)
 	}
-	query = query + " month<13 AND course<5 ORDER BY day ;"
+
+	query = query[:len(query)-4] + "ORDER BY day;"
 
 	var grades []*models.Grade
 
-	rows, err := g.db.Query(query, args...)
+	rows, err := g.Query(ctx, query, args...)
 	if err != nil {
 		// если нет строк (rows) то возвращаем пустой список []*grades БЕЗ ОШИБКИ
 		if errors.Is(err, sql.ErrNoRows) {
@@ -112,32 +115,28 @@ func (g *Grades) Find(opts models.GradesFindOpts) ([]*models.Grade, error) {
 	return grades, nil
 }
 
-func (g *Grades) FindResultGrades() {
-
-}
-
-func (g *Grades) Update(grade models.MinGrade) error {
-	if _, err := g.db.Exec("UPDATE grades SET value=? WHERE id=?", grade.Value, grade.Id); err != nil {
+func (g *Grades) Update(ctx context.Context, grade models.MinGrade) error {
+	if _, err := g.Exec(ctx, "UPDATE grades SET value=? WHERE id=?", grade.Value, grade.Id); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
 
-func (g *Grades) Delete(id int) error {
-	if _, err := g.db.Exec("DELETE FROM grades WHERE id=?", id); err != nil {
+func (g *Grades) Delete(ctx context.Context, id int) error {
+	if _, err := g.Exec(ctx, "DELETE FROM grades WHERE id=?", id); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
 
-func (g *Grades) DeleteByUser(userId int) error {
-	if _, err := g.db.Exec("DELETE FROM grades WHERE user_id=?", userId); err != nil {
+func (g *Grades) DeleteByUser(ctx context.Context, userId int) error {
+	if _, err := g.Exec(ctx, "DELETE FROM grades WHERE user_id=?", userId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
-func (g *Grades) DeleteBySubject(subjectId int) error {
-	if _, err := g.db.Exec("DELETE FROM grades WHERE subject_id=?", subjectId); err != nil {
+func (g *Grades) DeleteBySubject(ctx context.Context, subjectId int) error {
+	if _, err := g.Exec(ctx, "DELETE FROM grades WHERE subject_id=?", subjectId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

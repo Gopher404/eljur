@@ -36,7 +36,7 @@ func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 }
 
 type adminGradesTmpData struct {
-	Subjects *[4][2][]models.MinSubject `json:"subjects"`
+	Subjects *[4][3][]models.MinSubject `json:"subjects"`
 }
 
 func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
 		redirect(w, adminUrl+"/login")
 		return
 	}
-	subjectsList, err := h.subjectService.GetAllSubjects()
+	subjectsList, err := h.subjectService.GetAllSubjects(r.Context())
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return

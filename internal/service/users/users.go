@@ -24,8 +24,8 @@ type AuthService interface {
 }
 
 type GradesUser interface {
-	NewUserGrades(userId int) error
-	DeleteByUser(userId int) error
+	NewUserGrades(ctx context.Context, userId int) error
+	DeleteByUser(ctx context.Context, userId int) error
 }
 
 func New(userStorage storage.Users, auth AuthService, grades GradesUser) *UserService {
@@ -48,12 +48,15 @@ type SaveUsersIn struct {
 var ErrUserIsExist = errors.New("user is exist")
 
 func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
-
+	ctx, err := u.userStorage.Begin(ctx)
+	if err != nil {
+		return tr.Trace(err)
+	}
 	for _, user := range users {
 		fmt.Printf("%+v\n", user)
 		switch user.Action {
 		case "new":
-			if _, err := u.userStorage.GetId(user.Login); err == nil {
+			if _, err := u.userStorage.GetId(ctx, user.Login); err == nil {
 				return tr.Trace(ErrUserIsExist)
 			}
 			if err := u.auth.Register(ctx, user.Login, user.Password); err != nil {
@@ -62,26 +65,26 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 			if err := u.auth.SetPermission(ctx, user.Login, user.Perm); err != nil {
 				return tr.Trace(err)
 			}
-			id, err := u.userStorage.NewUser(user.Name, user.Login)
+			id, err := u.userStorage.NewUser(ctx, user.Name, user.Login)
 			if err != nil {
 				return tr.Trace(err)
 			}
-			if err := u.grades.NewUserGrades(id); err != nil {
+			if err := u.grades.NewUserGrades(ctx, id); err != nil {
 				return tr.Trace(err)
 			}
 			break
 		case "update":
-			userWithRealLogin, err := u.userStorage.GetById(user.Id)
+			userWithRealLogin, err := u.userStorage.GetById(ctx, user.Id)
 			if err != nil {
 				return tr.Trace(err)
 			}
-			if id, err := u.userStorage.GetId(user.Login); err == nil && userWithRealLogin.Id != id {
+			if id, err := u.userStorage.GetId(ctx, user.Login); err == nil && userWithRealLogin.Id != id {
 				return tr.Trace(ErrUserIsExist)
 			}
 			if err := u.auth.SetPermission(ctx, userWithRealLogin.Login, user.Perm); err != nil {
 				return tr.Trace(err)
 			}
-			if err := u.userStorage.Update(models.User{
+			if err := u.userStorage.Update(ctx, models.User{
 				Id:       user.Id,
 				FullName: user.Name,
 				Login:    user.Login,
@@ -95,10 +98,10 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 			}
 			break
 		case "del":
-			if err := u.userStorage.Delete(user.Id); err != nil {
+			if err := u.userStorage.Delete(ctx, user.Id); err != nil {
 				return tr.Trace(err)
 			}
-			if err := u.grades.DeleteByUser(user.Id); err != nil {
+			if err := u.grades.DeleteByUser(ctx, user.Id); err != nil {
 				return tr.Trace(err)
 			}
 			if err := u.auth.DeleteUser(ctx, user.Login); err != nil {
@@ -118,7 +121,7 @@ type UserWithPerm struct {
 }
 
 func (u *UserService) GetAll(ctx context.Context) ([]UserWithPerm, error) {
-	users, err := u.userStorage.GetAll()
+	users, err := u.userStorage.GetAll(ctx)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}

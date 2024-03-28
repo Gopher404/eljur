@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"eljur/internal/config"
 	"eljur/internal/domain/models"
@@ -9,32 +10,40 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type Beginner interface {
+	Begin(ctx context.Context) (context.Context, error)
+}
+
 type Users interface {
-	NewUser(name, login string) (int, error)
-	GetById(id int) (user *models.User, err error)
-	GetId(login string) (int, error)
-	GetAll() ([]*models.User, error)
-	Update(user models.User) error
-	Delete(id int) error
+	Beginner
+	NewUser(ctx context.Context, name, login string) (int, error)
+	GetById(ctx context.Context, id int) (user *models.User, err error)
+	GetId(ctx context.Context, login string) (int, error)
+	GetAll(ctx context.Context) ([]*models.User, error)
+	Update(ctx context.Context, user models.User) error
+	Delete(ctx context.Context, id int) error
 }
 
 type Grades interface {
-	NewGrade(grade *models.Grade) (int, error)
-	GetAll() ([]models.Grade, error)
-	Find(opts models.GradesFindOpts) ([]*models.Grade, error)
-	Update(grade models.MinGrade) error
-	Delete(id int) error
-	DeleteByUser(userId int) error
-	DeleteBySubject(subjectId int) error
+	Beginner
+	NewGrade(ctx context.Context, grade *models.Grade) (int, error)
+	GetAll(ctx context.Context) ([]models.Grade, error)
+	Find(ctx context.Context, opts models.GradesFindOpts) ([]*models.Grade, error)
+	Update(ctx context.Context, grade models.MinGrade) error
+	Delete(ctx context.Context, id int) error
+	DeleteByUser(ctx context.Context, userId int) error
+	DeleteBySubject(ctx context.Context, subjectId int) error
 }
 
 type Subjects interface {
-	GetById(id int) (string, error)
-	GetAll() ([]models.Subject, error)
-	GetBySemester(semester int8, course int8) ([]models.MinSubject, error)
-	NewSubject(subject models.Subject) (int, error)
-	Update(subject models.MinSubject) error
-	Delete(id int) error
+	Beginner
+	GetById(ctx context.Context, id int) (*models.Subject, error)
+	GetAll(ctx context.Context) ([]models.Subject, error)
+	Find(ctx context.Context, opts models.SubjectFindOpts) ([]models.Subject, error)
+	GetBySemester(ctx context.Context, semester int8, course int8) ([]models.MinSubject, error)
+	NewSubject(ctx context.Context, subject models.Subject) (int, error)
+	Update(ctx context.Context, subject models.MinSubject) error
+	Delete(ctx context.Context, id int) error
 }
 
 type Storage struct {

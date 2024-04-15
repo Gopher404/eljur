@@ -36,11 +36,13 @@ func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 }
 
 type adminGradesTmpData struct {
+	headerTmpData
 	Subjects *[4][3][]models.MinSubject `json:"subjects"`
 }
 
 func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
-	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, adminUrl+"/login")
 		return
@@ -50,38 +52,72 @@ func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}
-	h.renderTemplate(w, "admin/grades.html", adminGradesTmpData{
-		Subjects: subjectsList,
-	})
+
+	data := new(adminGradesTmpData)
+	if err := h.SetHeaderData(r.Context(), data, "grades", login); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	data.Subjects = subjectsList
+
+	h.renderTemplate(w, data, "admin/grades.html", "admin/header.html")
 }
 
 func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, adminUrl+"/login")
 		return
 	}
-	h.renderTemplate(w, "admin/users.html", nil)
+	data := new(headerTmpData)
+	if err := h.SetHeaderData(r.Context(), data, "users", login); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	h.renderTemplate(w, data, "admin/users.html", "admin/header.html")
 }
 
 func (h *Handler) handleAdminSubjects(w http.ResponseWriter, r *http.Request) {
-	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, adminUrl+"/login")
 		return
 	}
-	h.renderTemplate(w, "admin/subjects.html", nil)
+	data := new(headerTmpData)
+	if err := h.SetHeaderData(r.Context(), data, "subjects", login); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	h.renderTemplate(w, data, "admin/subjects.html", "admin/header.html")
+}
+
+type metricTmpData struct {
+	metric.Metric
+	headerTmpData
 }
 
 func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
-	if login, ok := h.authenticate(r, models.PermAdmin); !ok {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, adminUrl+"/login")
 		return
 	}
+	data := new(metricTmpData)
 	m, err := metric.GetMetric()
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 	}
-	h.renderTemplate(w, "admin/metric.html", m)
+	data.Rps = m.Rps
+	data.Logs = m.Logs
+	data.RenderPerSecond = m.RenderPerSecond
+
+	if err := h.SetHeaderData(r.Context(), data, "metric", login); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+
+	h.renderTemplate(w, data, "admin/metric.html", "admin/header.html")
 }

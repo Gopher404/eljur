@@ -6,82 +6,356 @@
     <link rel="icon" href="/static/media/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="/static/js/functions.js"></script>
+    <script src="/static/js/cookie.min.js"></script>
     <title>Оценки</title>
     <style>
         td {
             border: 1px solid black;
         }
+        * {
+            margin: 2px;
+        }
+        .grade-el {
+            padding: 0;
+            margin: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .grade {
+            font-weight: bold;
+            font-size: large;
+        }
+
+        .grade-canvas {
+            margin: 10px 3px;
+            padding: 3px;
+            max-width: 500px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 3px 2px 8px 1px rgb(0, 0, 0, 0.17);
+        }
+        .mp-0 {
+            margin: 0;
+            padding: 0;
+        }
+        #this-grades {
+            margin-left: 10px;
+            font-size: x-large;
+            font-weight: 400;
+            width: max-content;
+            border-bottom: 2px solid rgb(0 0 0 / 57%);
+        }
+        li > p {
+            margin: 0;
+        }
+        #grades {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+
+        .vert {
+            writing-mode: vertical-rl;
+            text-align: center;
+        }
+        table {
+            border-collapse: collapse;
+            border: none;
+        }
+        table tr:first-child td {
+            border-top: none;
+        }
+        table tr:last-child td {
+            border-bottom: none;
+        }
+        table tr td:first-child {
+            border-left: none;
+        }
+        table tr td:last-child {
+            border-right: none;
+        }
+
+        table tr:nth-child(even) * {
+            background-color: var(--bs-gray-200);
+        }
+
+
+        td {
+
+            border: 1px solid var(--bs-gray-800);
+        }
     </style>
 </head>
 <body>
+{{ template "header" . }}
+<div class="btn-group" role="group" id="courses-btn-group"></div>
 
-<table>
-    <tbody id="grades-tb">
-
-    </tbody>
-</table>
-
-</body>
 <script>
+    const MonthsNames = {
+        9: "Сентябрь",
+        10: "Октябрь",
+        11: "Ноябрь",
+        12: "Декабрь",
+        1: "Январь",
+        2: "Февраль",
+        3: "Март",
+        4: "Апрель",
+        5: "Май",
+        6: "Июнь",
+        100: "ИТОГ"
+    };
+    const CoursesRims = {
+        1: "&#8544",
+        2: "&#8545",
+        3: "&#8546",
+        4: "&#8547",
+    }
+    const months = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 100]
+
+    let group = document.getElementById("courses-btn-group");
+    for (let course = 1; course <= 4 ; course++) {
+        let dd = `
+<div class="btn-group" style="display: block">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            ${CoursesRims[course]} Курс
+        </button>
+        <ul class="dropdown-menu">
+        `
+        for (let month of months) {
+            dd += `<li><a class="dropdown-item" onclick="SelectGrades(${course}, ${month})">${MonthsNames[month]}</a></li>`
+        }
+
+
+        dd += "</ul></div>"
+        group.innerHTML += dd
+    }
+
+    for (let el of document.querySelectorAll("#courses-btn-group li>a")) {
+        if (el.innerHTML === MonthsNames[100]) {
+            el.classList.add("text-danger");
+        }
+
+    }
+
+</script>
+
+
+<div>
+    <div id="this-grades">
+
+    </div>
+    <div id="grades">
+
+    </div>
+</div>
+</body>
+<script src="/static/js/dd-submenu.js"></script>
+<script>
+    let course = 1
+    let month = 1
+
+    getTableFromCookies()
+
+
     function SetGrades() {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/grades/by_month_and_user");
-        xhr.send(JSON.stringify({"month": 1, "course": 1}))
+        xhr.send(JSON.stringify({"month": month, "course": course}))
         xhr.responseType = "json";
         xhr.onload = () => {
             if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) {
                 return
             }
             console.log(xhr.response)
-            let tb = document.getElementById("grades-tb")
-
-            let resGrades = []
-            let trList = []
-            let maxGradesResults = 0
-            for (let i = 0; i < xhr.response.subject_names.length; i++) {
-                let tr = document.createElement("tr")
-                tr.innerHTML += `<td>${xhr.response.subject_names[i]}</td>`
-                let tdGrades = "<td>"
-
-                let resSubjectGrades = []
-                let k = 0
-                for (let grade of xhr.response.grades[i]) {
-                    if (grade.day !== 100) {
-                        tdGrades += `${grade.value}, `
-                    } else {
-                        resSubjectGrades.push(grade.value)
-                        k++
-                    }
-                }
-                if (k > maxGradesResults) {
-                    maxGradesResults = k
-                }
-
-                resGrades.push(resSubjectGrades)
-                tdGrades += "</td>"
-
-                tr.innerHTML += tdGrades
-                tb.appendChild(tr)
-                trList.push(tr)
-            }
+            let div = document.getElementById("grades")
+            div.innerHTML = ""
 
             for (let i = 0; i < xhr.response.subject_names.length; i++) {
-                for (let j = 0; j < maxGradesResults; j++) {
-                    if (resGrades[i][j] !== undefined) {
-                        trList[i].innerHTML += `<td>${resGrades[i][j]}</td>`
-                    } else {
-                        trList[i].innerHTML += `<td></td>`
-                    }
-                }
+
+                let grades_canvas = NewGradesCanvas(xhr.response.subject_names[i], xhr.response.grades[i])
+
+                div.appendChild(grades_canvas)
             }
+
 
         }
+    }
 
+    function SetResGrades() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/grades/res_by_user");
+        xhr.send(JSON.stringify({"course": course}))
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return;
+            console.log(xhr.response);
+            let div = document.getElementById("grades");
+            div.innerHTML = "";
+            document.getElementById("this-grades").innerHTML = `${CoursesRims[course]} курс, итог`;
+            let table = document.createElement("table");
+            let row1 = document.createElement("tr");
+            row1.setAttribute("style", "height: 70px");
+            row1.innerHTML = `
+    <td>Предметы</td>
+    <td class="vert">Сентябрь</td>
+    <td class="vert">Октябрь</td>
+    <td class="vert">Ноябрь</td>
+    <td class="vert">Декабрь</td>
+    <td class="vert" style="font-weight: 600; font-size: large;">I семестр</td>
+    <td class="vert">Январь</td>
+    <td class="vert">Февраль</td>
+    <td class="vert">Март</td>
+    <td class="vert">Апрель</td>
+    <td class="vert">Май</td>
+    <td class="vert">Июнь</td>
+    <td class="vert" style="font-weight: 600; font-size: large;">II семестр</td>
+    <td class="vert text-danger" style="font-weight: 600; font-size: large;">ИТОГ</td>
+ `
+            table.appendChild(row1)
 
+            for (let rowGrades of xhr.response) {
+                let row = document.createElement("tr")
+                row.innerHTML += `<td>${rowGrades.subject_name}</td>`
+                for (let month = 8; month < 12; month++) {
+                    let grade = CreateGradeTd(rowGrades.month_res[month].value)
+                    row.appendChild(grade)
+                }
+                let grade = CreateGradeTd(rowGrades.semester_res[0].value)
+                row.appendChild(grade)
+                for (let month = 0; month < 6; month++) {
+                    let grade = CreateGradeTd(rowGrades.month_res[month].value)
+                    row.appendChild(grade)
+                }
+                grade = CreateGradeTd(rowGrades.semester_res[1].value)
+                row.appendChild(grade)
+                grade = CreateGradeTd(rowGrades.course_res.value)
+                row.appendChild(grade)
+
+                table.appendChild(row)
+            }
+            div.appendChild(table)
+
+        }
+    }
+
+    function CreateGradeTd(value = "") {
+        let grade_td = document.createElement("td");
+        grade_td.style.color = getGradeColor(value);
+        grade_td.style.width = "45px"
+        grade_td.innerHTML = `<p class="fw-semibold fs-5 mp-0">${value}</p>`
+        return grade_td
     }
 
 
-    SetGrades()
+    function createGradeEl(grade) {
+        let div = document.createElement("div");
+        div.classList.add("grade-el");
+
+        div.style.color = getGradeColor(grade.value);
+        div.innerHTML = `<p class="fw-normal mp-0">${formatDate(month, grade.day)}</p><p class="fw-semibold fs-5 mp-0">${grade.value}</p>`;
+        return div;
+    }
+
+    let thisGradesEl = document.getElementById("this-grades")
+    function SelectGrades(in_course, in_month) {
+        course = in_course;
+        month = in_month;
+        thisGradesEl.innerHTML = `${CoursesRims[in_course]} курс ${MonthsNames[in_month].toLowerCase()}`;
+        if (in_month === 100) {
+            SetResGrades();
+        } else {
+            SetGrades();
+        }
+        setTableCookie();
+    }
+
+    function getTableFromCookies() {
+        let cookie = getCookie("u-table");
+        cookie = cookie !== undefined ? cookie : ""
+        let params = cookie.split(".");
+        console.log(params);
+        course = Number.parseInt(params[0]);
+        if (Number.isNaN(course)) {
+            course = 1;
+        }
+
+        month = Number.parseInt(params[1]);
+        if (Number.isNaN(month)) {
+            month = 1;
+        }
+    }
+
+    function setTableCookie() {
+        let exp = new Date();
+        exp.setFullYear(exp.getFullYear() + 1);
+        setCookie("u-table", `${course}.${month}`, {path: "/", expires: exp});
+    }
+
+    function NewGradesCanvas(subject, grades) {
+        let canvas = document.createElement("div")
+        canvas.classList.add("grade-canvas")
+        let header = document.createElement("div")
+        header.classList.add("d-flex")
+
+        let div = document.createElement("div")
+        div.classList.add("d-flex")
+        let sum = 0
+        let len = 0
+        for (let grade of grades) {
+            let v = Number.parseInt(grade.value)
+            if (!Number.isNaN(v)) {
+                sum += v
+                len++
+            }
+            let gradeEl = createGradeEl(grade)
+            div.appendChild(gradeEl)
+        }
+
+        let average = len===0? "" : Math.round(sum/len * 100) / 100
+        header.innerHTML = `<p class="p-2 fw-semibold mp-0">${subject}</p><p class="ms-auto p-2 fw-semibold fs-5 mp-0" style="color: ${getGradeColor(average)}">${average}</p>`
+        canvas.appendChild(header)
+        canvas.appendChild(div)
+        return canvas
+    }
+
+    function getGradeColor(grade) {
+
+        grade = `${grade}`.toLowerCase().replace(" ", "")
+
+        let v = Number.parseFloat(grade)
+        if (!Number.isNaN(v)) {
+            if (v >= 4.5) {
+                return "#297e4c"
+            }
+            if (v >= 3.5) {
+                return "#7eba83"
+            }
+            if (v >= 2.5) {
+                return "#d19200"
+            }
+            if (v < 2.5) {
+                return "#dc3545"
+            }
+        }
+
+        switch (grade) {
+            case "зач":
+                return "#297e4c"
+            case "незач":
+                return "#dc3545"
+            case "н":
+                return "#6c757d"
+        }
+
+        return "#6c757d"
+    }
+
+
+    SelectGrades(course, month)
 </script>
 </html>

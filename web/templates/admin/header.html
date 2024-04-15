@@ -1,0 +1,28 @@
+{{ define "header" }}
+<header class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
+    <a href="/" class="d-flex align-items-center link-body-emphasis text-decoration-none">
+        <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none">
+            <img src="/static/media/favicon.ico" alt="">
+        </a>
+        <span class="fs-4">Электронный журнал</span>
+    </a>
+    <nav class="mt-2 mt-md-0 ms-md-auto">
+
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq .ActivePage "grades" }} border-bottom {{end}}" href="/admin/grades">Оценки</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq .ActivePage "users" }} border-bottom {{end}}" href="/admin/users">Пользователи</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq .ActivePage "subjects" }} border-bottom {{end}}" href="/admin/subjects">Предметы</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq .ActivePage "metric" }} border-bottom {{end}}" href="/admin/metric">Metric</a>
+        <div class="btn-group">
+            <button type="button" class="btn dropdown-toggle py-2 link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
+                Аккаунт
+            </button>
+            <ul class="dropdown-menu">
+                <li><p class="dropdown-item">{{ .UserName }}</p></li>
+                <li><a class="dropdown-item" href="/admin/login">Войти</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="javascript:LogOut()">Выйти</a></li>
+            </ul>
+        </div>
+    </nav>
+</header>
+{{ end }}

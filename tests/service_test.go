@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"eljur/tests/suite"
 	"fmt"
 	"github.com/stretchr/testify/require"
@@ -10,7 +11,8 @@ import (
 func TestGetGradesByMonthForUser(t *testing.T) {
 	g, err := suite.GetGradesService()
 	require.NoError(t, err)
-	grades, err := g.GetUserGradesByMonth(1, 1, 1)
+	ctx := context.Background()
+	grades, err := g.GetUserGradesByMonth(ctx, "test", 1, 1)
 	require.NoError(t, err)
 
 	fmt.Print("         ")

@@ -49,7 +49,7 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 		tmpData.OtherUserMess = "Войти как админ"
 	}
 	if r.Method == "GET" {
-		h.renderTemplate(w, "login.html", tmpData)
+		h.renderTemplate(w, tmpData, "login.html")
 	} else {
 		if err := r.ParseForm(); err != nil {
 			h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
@@ -62,7 +62,7 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 		token, err := h.auth.Login(r.Context(), login, pass)
 		if err != nil {
 			tmpData.Message = "Неверный логин или пароль"
-			h.renderTemplate(w, "login.html", tmpData)
+			h.renderTemplate(w, tmpData, "login.html")
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}
@@ -70,7 +70,7 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 		realPerm, err := h.auth.GetPermission(r.Context(), login)
 		if err != nil || realPerm < perm {
 			tmpData.Message = "Недостаточно прав"
-			h.renderTemplate(w, "login.html", tmpData)
+			h.renderTemplate(w, tmpData, "login.html")
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}

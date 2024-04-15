@@ -72,7 +72,7 @@ type SaveSubjectIn struct {
 func (s *SubjectService) Save(ctx context.Context, subjects []SaveSubjectIn) error {
 	ctx, err := s.subjectStorage.Begin(ctx)
 	if err != nil {
-		return err
+		return tr.Trace(err)
 	}
 
 	for _, subject := range subjects {
@@ -108,6 +108,10 @@ func (s *SubjectService) Save(ctx context.Context, subjects []SaveSubjectIn) err
 }
 
 func (s *SubjectService) newSubject(ctx context.Context, subject models.Subject) error {
+	ctx, err := s.subjectStorage.Begin(ctx)
+	if err != nil {
+		return tr.Trace(err)
+	}
 	id, err := s.subjectStorage.NewSubject(ctx, subject)
 	if err != nil {
 		return tr.Trace(err)
@@ -117,6 +121,9 @@ func (s *SubjectService) newSubject(ctx context.Context, subject models.Subject)
 		if err := s.grades.NewResGradesBySubject(ctx, id, subject.Course); err != nil {
 			return tr.Trace(err)
 		}
+	}
+	if err := transaction.Commit(ctx); err != nil {
+		return tr.Trace(err)
 	}
 	return nil
 }
@@ -129,10 +136,17 @@ func (s *SubjectService) update(ctx context.Context, subject models.MinSubject) 
 }
 
 func (s *SubjectService) delete(ctx context.Context, id int) error {
+	ctx, err := s.subjectStorage.Begin(ctx)
+	if err != nil {
+		return tr.Trace(err)
+	}
 	if err := s.subjectStorage.Delete(ctx, id); err != nil {
 		return tr.Trace(err)
 	}
 	if err := s.grades.DeleteBySubject(ctx, id); err != nil {
+		return tr.Trace(err)
+	}
+	if err := transaction.Commit(ctx); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

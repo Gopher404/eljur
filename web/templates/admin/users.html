@@ -43,21 +43,7 @@
     <title>Пользователи</title>
 </head>
 <body>
-<header class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
-    <a href="/" class="d-flex align-items-center link-body-emphasis text-decoration-none">
-        <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none">
-            <img src="/static/media/favicon.ico" alt="">
-        </a>
-        <span class="fs-4">Электронный журнал</span>
-    </a>
-    <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/grades">Оценки</a>
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none border-bottom" href="/admin/users">Пользователи</a>
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/subjects">Предметы</a>
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/metric">Metric</a>
-        <a class="py-2 link-body-emphasis text-decoration-none" style="margin-right: 10px" href="/admin/login">Войти</a>
-    </nav>
-</header>
+{{ template "header" . }}
 
 <div class="scroll-x">
     <table id="users_tb"></table>

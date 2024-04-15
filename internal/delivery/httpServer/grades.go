@@ -12,9 +12,7 @@ import (
 
 func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/save",
-		h.mw(func(w http.ResponseWriter, r *http.Request) {
-			h.handleGradesSave(w, r)
-		}),
+		h.mw(h.handleGradesSave),
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/by_month_and_subject",
@@ -22,11 +20,15 @@ func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/by_month_and_user",
-		h.handleGetUserGradesByMonth,
+		h.mw(h.handleGetUserGradesByMonth),
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/res_by_subject",
-		h.handleGetResGradesBySubject,
+		h.mw(h.handleGetResGradesBySubject),
+	).Methods("POST")
+
+	rtr.HandleFunc(url+"/res_by_user",
+		h.mw(h.handleGetResUserGrades),
 	).Methods("POST")
 
 }
@@ -173,6 +175,42 @@ func (h *Handler) handleGetResGradesBySubject(w http.ResponseWriter, r *http.Req
 	}
 
 	out, err := h.gradesService.GetResultGradesBySubject(r.Context(), in.SubjectId, in.Course)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	resp, err := json.Marshal(out)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(resp)
+}
+
+type getResUserGradesIn struct {
+	Course int8 `json:"course"`
+}
+
+func (h *Handler) handleGetResUserGrades(w http.ResponseWriter, r *http.Request) {
+	login, ok := h.authenticate(r, models.PermStudent)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	var in getResUserGradesIn
+	if err := json.Unmarshal(body, &in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	out, err := h.gradesService.GetResultGradesByUser(r.Context(), login, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return

@@ -70,9 +70,14 @@ func (h *Handler) httpErr(w http.ResponseWriter, err error, status int) {
 	h.l.Warn(err.Error())
 }
 
-func (h *Handler) renderTemplate(w http.ResponseWriter, fileName string, data any) {
+func (h *Handler) renderTemplate(w http.ResponseWriter, data any, filenames ...string) {
 	metric.HandleRender()
-	tmp, err := template.ParseFiles(fmt.Sprintf("web/templates/%s", fileName))
+
+	for i := range filenames {
+		filenames[i] = fmt.Sprintf("web/templates/%s", filenames[i])
+	}
+
+	tmp, err := template.ParseFiles(filenames...)
 	if err != nil {
 		h.httpErr(w, err, http.StatusInternalServerError)
 	}

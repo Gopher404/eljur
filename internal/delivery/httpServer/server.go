@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"context"
 	"eljur/internal/config"
 	"net"
 	"net/http"
@@ -11,7 +12,7 @@ type HttpServer struct {
 	server *http.Server
 }
 
-var timeOut time.Duration = time.Second * 10
+var timeOut = time.Second * 10
 
 func NewServer(handler http.Handler, cnf *config.BindConfig) *HttpServer {
 	timeOut = cnf.TimeOut
@@ -25,4 +26,10 @@ func NewServer(handler http.Handler, cnf *config.BindConfig) *HttpServer {
 
 func (s *HttpServer) Run() error {
 	return s.server.ListenAndServe()
+}
+
+func (s *HttpServer) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	return s.server.Shutdown(ctx)
 }

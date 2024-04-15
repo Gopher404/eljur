@@ -4,6 +4,7 @@ import (
 	"context"
 	"eljur/internal/domain/models"
 	"eljur/internal/storage"
+	"eljur/internal/storage/transaction"
 	"eljur/pkg/tr"
 	"errors"
 	"fmt"
@@ -60,9 +61,11 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 				return tr.Trace(ErrUserIsExist)
 			}
 			if err := u.auth.Register(ctx, user.Login, user.Password); err != nil {
+				_ = transaction.Rollback(ctx)
 				return tr.Trace(err)
 			}
 			if err := u.auth.SetPermission(ctx, user.Login, user.Perm); err != nil {
+				_ = transaction.Rollback(ctx)
 				return tr.Trace(err)
 			}
 			id, err := u.userStorage.NewUser(ctx, user.Name, user.Login)
@@ -82,6 +85,7 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 				return tr.Trace(ErrUserIsExist)
 			}
 			if err := u.auth.SetPermission(ctx, userWithRealLogin.Login, user.Perm); err != nil {
+				_ = transaction.Rollback(ctx)
 				return tr.Trace(err)
 			}
 			if err := u.userStorage.Update(ctx, models.User{
@@ -93,6 +97,7 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 			}
 			if userWithRealLogin.Login != user.Login {
 				if err := u.auth.UpdateLogin(ctx, userWithRealLogin.Login, user.Login); err != nil {
+					_ = transaction.Rollback(ctx)
 					return tr.Trace(err)
 				}
 			}
@@ -105,10 +110,14 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 				return tr.Trace(err)
 			}
 			if err := u.auth.DeleteUser(ctx, user.Login); err != nil {
+				_ = transaction.Rollback(ctx)
 				return tr.Trace(err)
 			}
 			break
 		}
+	}
+	if err := transaction.Commit(ctx); err != nil {
+		return tr.Trace(err)
 	}
 	return nil
 }
@@ -139,4 +148,16 @@ func (u *UserService) GetAll(ctx context.Context) ([]UserWithPerm, error) {
 		})
 	}
 	return fullUsers, nil
+}
+
+func (u *UserService) GetUserName(ctx context.Context, login string) (string, error) {
+	userId, err := u.userStorage.GetId(ctx, login)
+	if err != nil {
+		return "", tr.Trace(err)
+	}
+	user, err := u.userStorage.GetById(ctx, userId)
+	if err != nil {
+		return "", tr.Trace(err)
+	}
+	return user.FullName, nil
 }

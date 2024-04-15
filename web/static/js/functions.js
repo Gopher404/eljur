@@ -23,3 +23,8 @@ function handleResponseCode(code, urlToLogin, message) {
     }
     return true
 }
+
+function LogOut() {
+    deleteCookie("token");
+    window.location.href = "/student/login"
+}

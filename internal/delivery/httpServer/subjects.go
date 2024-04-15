@@ -11,8 +11,6 @@ import (
 )
 
 func (h *Handler) setSubjectsEndpoints(rtr *mux.Router, url string) {
-	studentUrl = url
-
 	rtr.HandleFunc(url+"/get_by_semester",
 		h.mw(h.handleSubjectsGetBySemester),
 	).Methods("POST")

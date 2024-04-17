@@ -152,6 +152,9 @@
     <div id="grades">
 
     </div>
+    <div class="d-flex justify-content-center" id="grades-spinner" style="margin-top: 100px">
+
+    </div>
 </div>
 </body>
 <script src="/static/js/dd-submenu.js"></script>
@@ -161,41 +164,46 @@
 
     getTableFromCookies()
 
+    let spinner_wrap = document.getElementById("grades-spinner")
+    const spinner_html = "<div class=\"spinner-border\" role=\"status\"><span class=\"visually-hidden\">Загрузка...</span></div>"
+
+    let grades_wrap = document.getElementById("grades")
 
     function SetGrades() {
+        grades_wrap.innerHTML = ""
+        spinner_wrap.innerHTML = spinner_html
+
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/grades/by_month_and_user");
         xhr.send(JSON.stringify({"month": month, "course": course}))
         xhr.responseType = "json";
         xhr.onload = () => {
-            if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) {
-                return
-            }
+            spinner_wrap.innerHTML = ""
+            if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return
+
             console.log(xhr.response)
-            let div = document.getElementById("grades")
-            div.innerHTML = ""
 
             for (let i = 0; i < xhr.response.subject_names.length; i++) {
-
                 let grades_canvas = NewGradesCanvas(xhr.response.subject_names[i], xhr.response.grades[i])
-
-                div.appendChild(grades_canvas)
+                grades_wrap.appendChild(grades_canvas)
             }
-
 
         }
     }
 
     function SetResGrades() {
+        grades_wrap.innerHTML = ""
+        spinner_wrap.innerHTML = spinner_html
+
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/grades/res_by_user");
         xhr.send(JSON.stringify({"course": course}))
         xhr.responseType = "json";
         xhr.onload = () => {
+            spinner_wrap.innerHTML = ""
             if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return;
             console.log(xhr.response);
-            let div = document.getElementById("grades");
-            div.innerHTML = "";
+
             document.getElementById("this-grades").innerHTML = `${CoursesRims[course]} курс, итог`;
             let table = document.createElement("table");
             let row1 = document.createElement("tr");
@@ -238,8 +246,7 @@
 
                 table.appendChild(row)
             }
-            div.appendChild(table)
-
+            grades_wrap.appendChild(table)
         }
     }
 

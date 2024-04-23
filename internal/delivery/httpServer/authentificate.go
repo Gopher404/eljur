@@ -33,24 +33,10 @@ func (h *Handler) authenticate(r *http.Request, perm int32) (login string, ok bo
 	return login, true
 }
 
-type loginTmpIn struct {
-	Message       string
-	OtherUserHref string
-	OtherUserMess string
-}
-
-func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, outUrl string) {
-	var tmpData loginTmpIn
-	if perm == models.PermAdmin {
-		tmpData.OtherUserHref = "/student/login"
-		tmpData.OtherUserMess = "Войти как студент"
-	} else {
-		tmpData.OtherUserHref = "/admin/login"
-		tmpData.OtherUserMess = "Войти как админ"
-	}
+func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		h.renderTemplate(w, tmpData, "login.html")
-	} else {
+		h.renderTemplate(w, "", "login.html")
+	} else if r.Method == "POST" {
 		if err := r.ParseForm(); err != nil {
 			h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 			return
@@ -58,31 +44,33 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request, perm int32, 
 
 		login := r.Form.Get("login")
 		pass := r.Form.Get("pass")
+		rememberMe := r.Form.Get("remember-me") == "1"
 
 		token, err := h.auth.Login(r.Context(), login, pass)
 		if err != nil {
-			tmpData.Message = "Неверный логин или пароль"
-			h.renderTemplate(w, tmpData, "login.html")
+			h.renderTemplate(w, "Неверный логин или пароль", "login.html")
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}
 
-		realPerm, err := h.auth.GetPermission(r.Context(), login)
-		if err != nil || realPerm < perm {
-			tmpData.Message = "Недостаточно прав"
-			h.renderTemplate(w, tmpData, "login.html")
+		perm, err := h.auth.GetPermission(r.Context(), login)
+		if err != nil || perm < models.PermStudent {
+			h.renderTemplate(w, "Недостаточно прав", "login.html")
 			h.l.Warn(tr.Trace(err).Error())
 			return
 		}
 
-		http.SetCookie(w, &http.Cookie{
-			Name:    "token",
-			Value:   token,
-			Path:    "/",
-			Expires: time.Now().Add(TTL),
-		})
+		cookie := &http.Cookie{
+			Name:  "token",
+			Value: token,
+			Path:  "/",
+		}
+		if rememberMe {
+			cookie.Expires = time.Now().Add(TTL)
+		}
+		http.SetCookie(w, cookie)
 
-		redirect(w, outUrl)
+		redirect(w, "/student/grades")
 	}
 }
 

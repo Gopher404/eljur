@@ -4,22 +4,17 @@ import (
 	"context"
 	"eljur/internal/domain/models"
 	"eljur/internal/storage"
-	"eljur/internal/storage/transaction"
 	"eljur/pkg/tr"
 	"errors"
 )
 
 type GradeService struct {
-	gradesStorage   storage.Grades
-	subjectsStorage storage.Subjects
-	userStorage     storage.Users
+	storage *storage.Storage
 }
 
-func New(gradesStorage storage.Grades, subjectsStorage storage.Subjects, userStorage storage.Users) *GradeService {
+func New(storage *storage.Storage) *GradeService {
 	return &GradeService{
-		gradesStorage:   gradesStorage,
-		subjectsStorage: subjectsStorage,
-		userStorage:     userStorage,
+		storage: storage,
 	}
 }
 
@@ -54,7 +49,7 @@ var (
 const resultSubjectSemester int8 = 3
 
 func (g *GradeService) GetUserGradesByMonth(ctx context.Context, login string, month int8, course int8) (*UserGradesByMonth, error) {
-	userId, err := g.userStorage.GetId(ctx, login)
+	userId, err := g.storage.Users.GetId(ctx, login)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -63,7 +58,7 @@ func (g *GradeService) GetUserGradesByMonth(ctx context.Context, login string, m
 	if month < 7 {
 		semester = 2
 	}
-	subjects, err := g.subjectsStorage.GetBySemester(ctx, semester, course)
+	subjects, err := g.storage.Subjects.GetBySemester(ctx, semester, course)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -73,7 +68,7 @@ func (g *GradeService) GetUserGradesByMonth(ctx context.Context, login string, m
 	for _, subject := range subjects {
 		userGradesByMonth.SubjectsNames = append(userGradesByMonth.SubjectsNames, subject.Name)
 
-		grades, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		grades, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			UserId:    &userId,
 			SubjectId: &subject.Id,
 			Month:     &month,
@@ -97,7 +92,7 @@ func (g *GradeService) GetUserGradesByMonth(ctx context.Context, login string, m
 }
 
 func (g *GradeService) GetByMonthAndSubject(ctx context.Context, month int8, subjectId int, course int8) (*SubjectGradesByMonth, error) {
-	grades, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+	grades, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 		SubjectId: &subjectId,
 		Month:     &month,
 		Course:    &course,
@@ -106,7 +101,7 @@ func (g *GradeService) GetByMonthAndSubject(ctx context.Context, month int8, sub
 		return nil, tr.Trace(err)
 	}
 
-	users, err := g.userStorage.GetAll(ctx)
+	users, err := g.storage.Users.GetAll(ctx)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -149,11 +144,11 @@ type ResultGradesBySubject struct {
 func (g *GradeService) GetResultGradesBySubject(ctx context.Context, subjectId int, course int8) (*ResultGradesBySubject, error) {
 	var res ResultGradesBySubject
 
-	userList, err := g.userStorage.GetAll(ctx)
+	userList, err := g.storage.Users.GetAll(ctx)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	subject, err := g.subjectsStorage.GetById(ctx, subjectId)
+	subject, err := g.storage.Subjects.GetById(ctx, subjectId)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -166,7 +161,7 @@ func (g *GradeService) GetResultGradesBySubject(ctx context.Context, subjectId i
 	for _, user := range userList {
 		var userGrades ResUserGradesLine
 
-		gradesMonth, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesMonth, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			SubjectId: &subjectId,
 			Day:       &monthResDay,
 			Course:    &course,
@@ -183,7 +178,7 @@ func (g *GradeService) GetResultGradesBySubject(ctx context.Context, subjectId i
 			}
 		}
 
-		gradesSemester, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesSemester, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			SubjectId: &subjectId,
 			Day:       &semesterResDay,
 			Course:    &course,
@@ -196,7 +191,7 @@ func (g *GradeService) GetResultGradesBySubject(ctx context.Context, subjectId i
 			userGrades.SemesterRes[grade.Month-1] = models.MinGrade{Id: grade.Id, Value: grade.Value}
 		}
 
-		gradesCourse, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesCourse, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			SubjectId: &subjectId,
 			Month:     &courseResMonth,
 			Course:    &course,
@@ -226,11 +221,11 @@ type ResUserGradesLineBySubject struct {
 }
 
 func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, course int8) ([]*ResUserGradesLineBySubject, error) {
-	userId, err := g.userStorage.GetId(ctx, login)
+	userId, err := g.storage.Users.GetId(ctx, login)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	subjects, err := g.subjectsStorage.GetBySemester(ctx, resultSubjectSemester, course)
+	subjects, err := g.storage.Subjects.GetBySemester(ctx, resultSubjectSemester, course)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -242,7 +237,7 @@ func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, 
 
 		subjectGrades.SubjectName = subject.Name
 
-		gradesByMonth, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesByMonth, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			UserId:    &userId,
 			SubjectId: &subject.Id,
 			Day:       &monthResDay,
@@ -259,7 +254,7 @@ func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, 
 			}
 		}
 
-		gradesSemester, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesSemester, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			SubjectId: &subject.Id,
 			Day:       &semesterResDay,
 			Course:    &course,
@@ -272,7 +267,7 @@ func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, 
 			subjectGrades.SemesterRes[grade.Month-1] = models.MinGrade{Id: grade.Id, Value: grade.Value}
 		}
 
-		gradesCourse, err := g.gradesStorage.Find(ctx, models.GradesFindOpts{
+		gradesCourse, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
 			SubjectId: &subject.Id,
 			Month:     &courseResMonth,
 			Course:    &course,
@@ -296,14 +291,14 @@ func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, 
 }
 
 func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) error {
-	ctx, err := g.gradesStorage.Begin(ctx)
+	ctx, err := g.storage.Tx.Begin(ctx)
 	if err != nil {
 		return tr.Trace(err)
 	}
 	for _, grade := range grades {
 		switch grade.Action {
 		case models.GradeActionNew:
-			if _, err := g.gradesStorage.NewGrade(ctx, &models.Grade{
+			if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 				UserId:    grade.UserId,
 				SubjectId: grade.SubjectId,
 				Value:     grade.Value,
@@ -316,7 +311,7 @@ func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) e
 			break
 
 		case models.GradeActionUpdate:
-			if err := g.gradesStorage.Update(ctx, models.MinGrade{
+			if err := g.storage.Grades.Update(ctx, models.MinGrade{
 				Id:    grade.Id,
 				Value: grade.Value,
 			}); err != nil {
@@ -325,21 +320,21 @@ func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) e
 			break
 
 		case models.GradeActionDelete:
-			if err := g.gradesStorage.Delete(ctx, grade.Id); err != nil {
+			if err := g.storage.Grades.Delete(ctx, grade.Id); err != nil {
 				return tr.Trace(err)
 			}
 			break
 		}
 	}
 
-	if err := transaction.Commit(ctx); err != nil {
+	if err := g.storage.Tx.Commit(ctx); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
 
 func (g *GradeService) NewUserGrades(ctx context.Context, userId int) error {
-	grades, err := g.gradesStorage.GetAll(ctx)
+	grades, err := g.storage.Grades.GetAll(ctx)
 	if err != nil {
 		return tr.Trace(err)
 	}
@@ -352,7 +347,7 @@ func (g *GradeService) NewUserGrades(ctx context.Context, userId int) error {
 		if ok {
 			continue
 		}
-		if _, err := g.gradesStorage.NewGrade(ctx, &models.Grade{
+		if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 			UserId:    userId,
 			SubjectId: grade.SubjectId,
 			Value:     "",
@@ -368,7 +363,7 @@ func (g *GradeService) NewUserGrades(ctx context.Context, userId int) error {
 }
 
 func (g *GradeService) NewResGradesBySubject(ctx context.Context, subjectId int, course int8) error {
-	users, err := g.userStorage.GetAll(ctx)
+	users, err := g.storage.Users.GetAll(ctx)
 	if err != nil {
 		return tr.Trace(err)
 	}
@@ -376,7 +371,7 @@ func (g *GradeService) NewResGradesBySubject(ctx context.Context, subjectId int,
 	var month int8
 	for month = 1; month <= 12; month++ {
 		for _, user := range users {
-			if _, err := g.gradesStorage.NewGrade(ctx, &models.Grade{
+			if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 				UserId:    user.Id,
 				SubjectId: subjectId,
 				Value:     "",
@@ -393,7 +388,7 @@ func (g *GradeService) NewResGradesBySubject(ctx context.Context, subjectId int,
 		// res grades by semesters
 		var semester int8
 		for semester = 1; semester <= 2; semester++ {
-			if _, err := g.gradesStorage.NewGrade(ctx, &models.Grade{
+			if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 				UserId:    user.Id,
 				SubjectId: subjectId,
 				Value:     "",
@@ -406,7 +401,7 @@ func (g *GradeService) NewResGradesBySubject(ctx context.Context, subjectId int,
 		}
 
 		// res grade by course
-		if _, err := g.gradesStorage.NewGrade(ctx, &models.Grade{
+		if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 			UserId:    user.Id,
 			SubjectId: subjectId,
 			Value:     "",
@@ -421,14 +416,14 @@ func (g *GradeService) NewResGradesBySubject(ctx context.Context, subjectId int,
 }
 
 func (g *GradeService) DeleteByUser(ctx context.Context, userId int) error {
-	if err := g.gradesStorage.DeleteByUser(ctx, userId); err != nil {
+	if err := g.storage.Grades.DeleteByUser(ctx, userId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
 
 func (g *GradeService) DeleteBySubject(ctx context.Context, subjectId int) error {
-	if err := g.gradesStorage.DeleteBySubject(ctx, subjectId); err != nil {
+	if err := g.storage.Grades.DeleteBySubject(ctx, subjectId); err != nil {
 		return tr.Trace(err)
 	}
 	return nil

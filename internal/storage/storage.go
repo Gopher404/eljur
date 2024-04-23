@@ -6,16 +6,12 @@ import (
 	"eljur/internal/config"
 	"eljur/internal/domain/models"
 	data "eljur/internal/storage/mysql"
+	"eljur/internal/storage/transaction"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Beginner interface {
-	Begin(ctx context.Context) (context.Context, error)
-}
-
 type Users interface {
-	Beginner
 	NewUser(ctx context.Context, name, login string) (int, error)
 	GetById(ctx context.Context, id int) (user *models.User, err error)
 	GetId(ctx context.Context, login string) (int, error)
@@ -25,7 +21,6 @@ type Users interface {
 }
 
 type Grades interface {
-	Beginner
 	NewGrade(ctx context.Context, grade *models.Grade) (int, error)
 	GetAll(ctx context.Context) ([]models.Grade, error)
 	Find(ctx context.Context, opts models.GradesFindOpts) ([]*models.Grade, error)
@@ -36,7 +31,6 @@ type Grades interface {
 }
 
 type Subjects interface {
-	Beginner
 	GetById(ctx context.Context, id int) (*models.Subject, error)
 	GetAll(ctx context.Context) ([]models.Subject, error)
 	Find(ctx context.Context, opts models.SubjectFindOpts) ([]models.Subject, error)
@@ -50,6 +44,7 @@ type Storage struct {
 	Users    Users
 	Grades   Grades
 	Subjects Subjects
+	Tx       *transaction.TxManager
 }
 
 func New(cnf *config.DBConfig) (*Storage, error) {
@@ -60,9 +55,13 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
+
+	txManager := transaction.NewTxManager(db)
+
 	return &Storage{
 		Users:    data.NewUsersStorage(db),
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
+		Tx:       txManager,
 	}, nil
 }

@@ -71,7 +71,7 @@
         xhr.send(JSON.stringify({"semester": Semester, "course": Course}))
         xhr.responseType = "json";
         xhr.onload = () => {
-            if (!handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при получении списка пользователей, статус код ответа ${xhr.status}`)) {
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при получении списка пользователей, статус код ответа ${xhr.status}`)) {
                 return
             }
             document.getElementById("table-name").innerText = `${Course} курс, ${Semester} семестр`
@@ -162,7 +162,7 @@
         xhr.send(JSON.stringify(UpdateList))
         xhr.responseType = "json";
         xhr.onload = () => {
-            if (!handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
                 btnSave.removeAttribute("disabled")
                 return
             }

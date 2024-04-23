@@ -118,7 +118,7 @@
         xhr.send()
         xhr.responseType = "json";
         xhr.onload = () => {
-            if (!handleResponseCode(xhr.status, "/admin/login", `Произошла ошибка при получении списка пользователей, статус код ответа ${xhr.status}`)) {
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при получении списка пользователей, статус код ответа ${xhr.status}`)) {
                 return
             }
             console.log(xhr.response)
@@ -216,7 +216,7 @@
         xhr.open("POST", "/users/save");
         xhr.send(JSON.stringify(SaveList))
         xhr.onload = () => {
-            if (handleResponseCode(xhr.status,  "/admin/login", `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
+            if (handleResponseCode(xhr.status, `Произошла ошибка при сохранении, статус код ответа ${xhr.status}`)) {
                 SaveList = []
                 SetUsers()
             }

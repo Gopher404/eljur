@@ -10,19 +10,6 @@ type TxStorage struct {
 	DB *sql.DB
 }
 
-func (s *TxStorage) Begin(ctx context.Context) (context.Context, error) {
-	/*if tx := storage.ExtractTx(ctx); tx != nil {
-		return ctx, nil
-	}*/
-
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	return CtxWidthTx(ctx, tx), nil
-}
-
 func (s *TxStorage) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	tx := ExtractTx(ctx)
 	if tx != nil {

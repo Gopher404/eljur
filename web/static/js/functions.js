@@ -13,11 +13,11 @@ function formatDate(month, day) {
     return dayS + "." + monthS
 }
 
-function handleResponseCode(code, urlToLogin, message) {
+function handleResponseCode(code, message) {
     if (code !== 200) {
         alert(message)
         if (code === 401) {
-            window.location.replace(urlToLogin)
+            window.location.replace("/login")
         }
         return false
     }
@@ -26,5 +26,5 @@ function handleResponseCode(code, urlToLogin, message) {
 
 function LogOut() {
     deleteCookie("token");
-    window.location.href = "/student/login"
+    window.location.href = "/login"
 }

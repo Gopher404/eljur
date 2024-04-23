@@ -2,33 +2,41 @@ package httpServer
 
 import (
 	"context"
+	"eljur/internal/domain/models"
 	"eljur/pkg/tr"
 )
 
 type headerTmpData struct {
-	UserName   string
-	ActivePage string
+	TmpData map[string]any
 }
 
-func (h *headerTmpData) SetUserName(username string) {
-	h.UserName = username
+func (h *headerTmpData) setData(data ...any) {
+	for i := 0; i < len(data)-1; i += 2 {
+		h.TmpData[data[i].(string)] = data[i+1]
+	}
 }
 
-func (h *headerTmpData) SetActivePage(page string) {
-	h.ActivePage = page
+func (h *headerTmpData) initData() {
+	h.TmpData = make(map[string]any)
 }
 
 type HeaderSetter interface {
-	SetUserName(username string)
-	SetActivePage(username string)
+	setData(data ...any)
+	initData()
 }
 
 func (h *Handler) SetHeaderData(ctx context.Context, headerData HeaderSetter, activePage string, login string) error {
-	headerData.SetActivePage(activePage)
-	userName, err := h.usersService.GetUserName(ctx, login)
+	headerData.initData()
+	headerData.setData("active-page", activePage)
+
+	user, err := h.usersService.GetUser(ctx, login)
 	if err != nil {
 		return tr.Trace(err)
 	}
-	headerData.SetUserName(userName)
+	headerData.setData(
+		"user-name", user.Name,
+		"is-admin", user.Perm >= models.PermAdmin,
+	)
+
 	return nil
 }

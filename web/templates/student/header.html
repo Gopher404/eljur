@@ -7,15 +7,18 @@
         <span class="fs-4">Электронный журнал</span>
     </a>
     <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
-        <a class="me-3 py-2 link-body-emphasis text-decoration-none border-bottom {{ if eq .ActivePage "grades" }} border-bottom {{end}}" href="/student/grades">Оценки</a>
-
+        {{ $active_page := index .TmpData "active-page" }}
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq $active_page "grades" }} border-bottom {{end}}" href="/student/grades">Оценки</a>
+        {{ if index .TmpData "is-admin" }}
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/grades">Админ панель</a>
+        {{ end }}
         <div class="btn-group">
             <button type="button" class="btn dropdown-toggle py-2 link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
                 Аккаунт
             </button>
             <ul class="dropdown-menu">
-                <li><p class="dropdown-item">{{ .UserName }}</p></li>
-                <li><a class="dropdown-item" href="/student/login">Войти</a></li>
+                <li><p class="dropdown-item">{{ index .TmpData "user-name" }}</p></li>
+                <li><a class="dropdown-item" href="/login">Войти</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="javascript:LogOut()">Выйти</a></li>
             </ul>

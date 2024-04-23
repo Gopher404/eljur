@@ -4,7 +4,6 @@ import (
 	"eljur/internal/app"
 	"eljur/internal/config"
 	"eljur/internal/pkg/logger"
-	"fmt"
 )
 
 const configPath = "config/config.yaml"
@@ -18,7 +17,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l.Info(fmt.Sprintf("cnf: %+v", cnf))
 
 	if err := app.Run(cnf, l); err != nil {
 		panic(err)

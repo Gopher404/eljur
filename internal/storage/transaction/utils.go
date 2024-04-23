@@ -3,11 +3,6 @@ package transaction
 import (
 	"context"
 	"database/sql"
-	"errors"
-)
-
-var (
-	ErrNoTx = errors.New("tx is not in the context values")
 )
 
 type txKey struct{}
@@ -21,20 +16,4 @@ func ExtractTx(ctx context.Context) *sql.Tx {
 		return tx
 	}
 	return nil
-}
-
-func Rollback(ctx context.Context) error {
-	tx := ExtractTx(ctx)
-	if tx == nil {
-		return ErrNoTx
-	}
-	return tx.Rollback()
-}
-
-func Commit(ctx context.Context) error {
-	tx := ExtractTx(ctx)
-	if tx == nil {
-		return ErrNoTx
-	}
-	return tx.Commit()
 }

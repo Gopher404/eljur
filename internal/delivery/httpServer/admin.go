@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"time"
 )
-
-var adminUrl string
 
 func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 	rtr.HandleFunc(url+"/grades",
@@ -24,13 +23,12 @@ func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 		h.mw(h.handleAdminSubjects),
 	).Methods("GET")
 
-	rtr.HandleFunc(url+"/login",
-		h.mw(func(w http.ResponseWriter, r *http.Request) {
-			h.loginUser(w, r, models.PermAdmin, url+"/grades")
-		}),
-	).Methods("GET", "POST")
 	rtr.HandleFunc(url+"/metric",
 		h.mw(h.handleAdminMetric),
+	).Methods("GET")
+
+	rtr.HandleFunc(url+"/logs.xlsx",
+		h.mw(h.handleAdminMetricXLSX),
 	).Methods("GET")
 
 }
@@ -44,7 +42,7 @@ func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
 	login, ok := h.authenticate(r, models.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, adminUrl+"/login")
+		redirect(w, "/login")
 		return
 	}
 	subjectsList, err := h.subjectService.GetAllSubjects(r.Context())
@@ -67,7 +65,7 @@ func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	login, ok := h.authenticate(r, models.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, adminUrl+"/login")
+		redirect(w, "/login")
 		return
 	}
 	data := new(headerTmpData)
@@ -82,7 +80,7 @@ func (h *Handler) handleAdminSubjects(w http.ResponseWriter, r *http.Request) {
 	login, ok := h.authenticate(r, models.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, adminUrl+"/login")
+		redirect(w, "/login")
 		return
 	}
 	data := new(headerTmpData)
@@ -102,7 +100,7 @@ func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
 	login, ok := h.authenticate(r, models.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
-		redirect(w, adminUrl+"/login")
+		redirect(w, "/login")
 		return
 	}
 	data := new(metricTmpData)
@@ -120,4 +118,21 @@ func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderTemplate(w, data, "admin/metric.html", "admin/header.html")
+}
+
+func (h *Handler) handleAdminMetricXLSX(w http.ResponseWriter, r *http.Request) {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
+		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
+		redirect(w, "/login")
+		return
+	}
+	logs, err := metric.GetXLSXLogs()
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+
+	http.ServeContent(w, r, "logs.xlsx", time.Now(), logs)
+
 }

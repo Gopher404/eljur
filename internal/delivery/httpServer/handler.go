@@ -43,6 +43,7 @@ func (h *Handler) GetMuxRouter() *mux.Router {
 
 func (h *Handler) setEndpoints(rtr *mux.Router) {
 	rtr.HandleFunc("/", h.handleIndex).Methods("GET")
+	rtr.HandleFunc("/login", h.mw(h.loginUser))
 
 	rtr.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./web/static/"))))
 

@@ -1,8 +1,13 @@
 package metric
 
 import (
+	"bytes"
 	"eljur/internal/pkg/logger"
 	"eljur/pkg/tr"
+	"encoding/json"
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"io"
 	"sync/atomic"
 	"time"
 )
@@ -39,6 +44,66 @@ func getLogs() (string, error) {
 		return "", tr.Trace(err)
 	}
 	return string(logs), nil
+}
+
+func GetXLSXLogs() (io.ReadSeeker, error) {
+	logs, err := logger.GetLogs()
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	file := excelize.NewFile()
+
+	sheetIndex, err := file.NewSheet("logs")
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+	file.SetActiveSheet(sheetIndex)
+
+	headers := []string{"time", "level", "message", "URL", "Method", "Remote Addr", "Body"}
+	for i, header := range headers {
+		if err := file.SetCellValue("logs", fmt.Sprintf("%s%d", string(rune(65+i)), 1), header); err != nil {
+			return nil, tr.Trace(err)
+		}
+	}
+
+	logsM := make([]map[string]string, 0)
+
+	if err := json.Unmarshal(logs, &logsM); err != nil {
+		return nil, tr.Trace(err)
+	}
+	data := make([][]string, len(logsM))
+
+	for i, logM := range logsM {
+		logS := []string{logM["time"], logM["level"], logM["msg"], logM["URL"], logM["Method"], logM["Remote"], logM["body"]}
+
+		for _, k := range []string{"time", "level", "msg", "URL", "Method", "Remote", "body"} {
+			delete(logM, k)
+		}
+		for _, v := range logM {
+			logS = append(logS, v)
+		}
+		data[i] = logS
+	}
+
+	for i, row := range data {
+		dataRow := i + 2
+		for j, col := range row {
+			if err := file.SetCellValue("logs", fmt.Sprintf("%s%d", string(rune(65+j)), dataRow), col); err != nil {
+				return nil, tr.Trace(err)
+			}
+		}
+	}
+
+	buf, err := file.WriteToBuffer()
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+	b, err := io.ReadAll(buf)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+	return bytes.NewReader(b), nil
 }
 
 func CountRPS() {

@@ -11,9 +11,25 @@
         * {
             margin: 2px;
         }
+        #logs-wrap {
+            padding: 3px;
+        }
+
         #logs>p {
+            width: 100%;
             margin: 0;
             font-family: system-ui;
+        }
+        #logs {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+
+        }
+        #logs::-webkit-scrollbar {
+            position: absolute;
+            bottom: 0;
         }
         .head {
             display: flex;
@@ -28,8 +44,8 @@
     <h3>Render per second: {{ .RenderPerSecond }}</h3>
 </div>
 <a class="btn btn-link" href="/admin/logs.xlsx">Скачать logs.xlsx</a>
-<div id="logs" class="bg-light p-3 rounded-2">
-
+<div id="logs-wrap" class="bg-light rounded-2">
+    <div id="logs"></div>
 </div>
 <script src="/static/js/functions.js"></script>
 <script>

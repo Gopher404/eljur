@@ -48,7 +48,7 @@ func (u *Users) GetId(ctx context.Context, login string) (int, error) {
 
 func (u *Users) GetAll(ctx context.Context) ([]*models.User, error) {
 	var users []*models.User
-	rows, err := u.Query(ctx, "SELECT * FROM users;")
+	rows, err := u.Query(ctx, "SELECT * FROM users ORDER BY name;")
 	if err != nil {
 		return nil, tr.Trace(err)
 	}

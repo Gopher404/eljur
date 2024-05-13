@@ -25,7 +25,7 @@ func NewSubjectsStorage(db *sql.DB) *Subjects {
 func (s *Subjects) GetById(ctx context.Context, id int) (*models.Subject, error) {
 
 	var subject models.Subject
-	if err := s.QueryRow(ctx, "SELECT * FROM subjects WHERE id=?", id).Scan(
+	if err := s.QueryRow(ctx, "SELECT * FROM subjects WHERE id=?;", id).Scan(
 		&subject.Id, &subject.Name, &subject.Semester, &subject.Course); err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -52,7 +52,7 @@ func (s *Subjects) Find(ctx context.Context, opts models.SubjectFindOpts) ([]mod
 		query += "course=? AND "
 		args = append(args, *opts.Course)
 	}
-	query = query[:len(query)-5]
+	query = query[:len(query)-5] + " ORDER BY name;"
 	fmt.Println(query, args)
 	var subjects []models.Subject
 	rows, err := s.Query(ctx, query, args...)
@@ -75,7 +75,7 @@ func (s *Subjects) Find(ctx context.Context, opts models.SubjectFindOpts) ([]mod
 // return [subject1, subject2, ...]
 
 func (s *Subjects) GetAll(ctx context.Context) ([]models.Subject, error) {
-	rows, err := s.Query(ctx, "SELECT * FROM subjects")
+	rows, err := s.Query(ctx, "SELECT * FROM subjects ORDER BY name;")
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -93,7 +93,7 @@ func (s *Subjects) GetAll(ctx context.Context) ([]models.Subject, error) {
 }
 
 func (s *Subjects) GetBySemester(ctx context.Context, semester int8, course int8) ([]models.MinSubject, error) {
-	rows, err := s.Query(ctx, "SELECT id, name FROM subjects WHERE semester=? AND course=?", semester, course)
+	rows, err := s.Query(ctx, "SELECT id, name FROM subjects WHERE semester=? AND course=? ORDER BY name;", semester, course)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -109,8 +109,6 @@ func (s *Subjects) GetBySemester(ctx context.Context, semester int8, course int8
 
 	return subjects, nil
 }
-
-// create new subject
 
 func (s *Subjects) NewSubject(ctx context.Context, subject models.Subject) (int, error) {
 	res, err := s.Exec(ctx, "INSERT INTO subjects (name, semester, course) VALUES (?, ?, ?)", subject.Name, subject.Semester, subject.Course)
@@ -130,8 +128,6 @@ func (s *Subjects) Update(ctx context.Context, subject models.MinSubject) error 
 	}
 	return nil
 }
-
-// delete subject
 
 func (s *Subjects) Delete(ctx context.Context, id int) error {
 	if _, err := s.Exec(ctx, "DELETE FROM subjects WHERE id=?", id); err != nil {

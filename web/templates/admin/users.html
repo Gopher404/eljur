@@ -33,12 +33,10 @@
         td > select {
             border: 0;
         }
-        .dropdown-menu {
+        .dropdown-button {
             background: none;
             border: 0;
         }
-
-
     </style>
     <title>Пользователи</title>
 </head>
@@ -48,6 +46,7 @@
 <div class="scroll-x">
     <table id="users_tb"></table>
 </div>
+<p class="text-danger">Не забудьте сохранить изменения!</p>
 
 
 
@@ -63,10 +62,6 @@
 <div class="modal fade" id="modal-new-user" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <!--<div class="modal-header">
-                <h1 class="modal-title fs-5" id="staticBackdropLabel">Заголовок модального окна</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div> -->
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-auto">
@@ -137,11 +132,11 @@
         tr.id = user.id
 
         let tdId = document.createElement("td")
-        tdId.innerHTML = `<div class="dropdown">
+        tdId.innerHTML = `<div class="dropdown dropend">
           <button style="border: 0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             ${user.to_id === undefined? user.id: user.to_id}
           </button>
-          <ul class="dropdown-menu">
+          <ul class="dropdown-menu dropdown-button" style="inset: 0; z-index: 100;">
             <a class="btn btn-danger btn-sm" href="javascript:DeleteUser(${user.id}, '${user.login}')">Удалить</a>
           <ul/>
         </div>`

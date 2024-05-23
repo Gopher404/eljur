@@ -16,7 +16,10 @@ func (h *Handler) setUsersEndpoints(rtr *mux.Router, url string) {
 	).Methods("POST")
 
 	rtr.HandleFunc(url+"/save",
-		h.mw(h.Save),
+		h.mw(h.handleUsersSave),
+	).Methods("POST")
+	rtr.HandleFunc(url+"/change_password",
+		h.mw(h.handleUsersChangePassword),
 	).Methods("POST")
 }
 
@@ -39,7 +42,7 @@ func (h *Handler) handleUsersGetAll(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(out)
 }
 
-func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleUsersSave(w http.ResponseWriter, r *http.Request) {
 	_, ok := h.authenticate(r, models.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -56,6 +59,33 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.usersService.Save(r.Context(), in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) handleUsersChangePassword(w http.ResponseWriter, r *http.Request) {
+	login, ok := h.authenticate(r, models.PermStudent)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	newPassword := string(body)
+
+	saveUsersIn := []userService.SaveUsersIn{
+		{
+			Action:   "update",
+			Login:    login,
+			Password: newPassword,
+		},
+	}
+	if err := h.usersService.Save(r.Context(), saveUsersIn); err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return
 	}

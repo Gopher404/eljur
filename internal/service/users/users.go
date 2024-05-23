@@ -19,6 +19,7 @@ type AuthService interface {
 	Register(ctx context.Context, login string, password string) error
 	DeleteUser(ctx context.Context, login string) error
 	UpdateLogin(ctx context.Context, login string, newLogin string) error
+	ChangePassword(ctx context.Context, login string, newPassword string) error
 	GetPermission(ctx context.Context, login string) (int32, error)
 	SetPermission(ctx context.Context, login string, permission int32) error
 }
@@ -76,6 +77,14 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 			}
 			break
 		case "update":
+			if user.Password != "" {
+				if err := u.auth.ChangePassword(ctx, user.Login, user.Password); err != nil {
+					return tr.Trace(err)
+				}
+				if user.Id == 0 {
+					continue
+				}
+			}
 			userWithRealLogin, err := u.storage.Users.GetById(ctx, user.Id)
 			if err != nil {
 				return tr.Trace(err)

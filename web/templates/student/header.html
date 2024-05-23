@@ -19,10 +19,68 @@
             <ul class="dropdown-menu">
                 <li><p class="dropdown-item">{{ index .TmpData "user-name" }}</p></li>
                 <li><a class="dropdown-item" href="/login">Войти</a></li>
+                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalChangePass" onclick="ResetPassForm()">Сменить пароль</button></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="javascript:LogOut()">Выйти</a></li>
             </ul>
         </div>
     </nav>
 </header>
+
+<!-- Модальное окно -->
+<div class="modal fade" id="modalChangePass" tabindex="-1" aria-labelledby="modalChangePass" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Введите новый пароль</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="pass1">
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="pass2" aria-describedby="passHelp">
+                        <div id="passHelp" class="form-text">Повторите пороль</div>
+                    </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="ChangePasword()">Изменить</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const passIn1 = document.getElementById("pass1");
+    const passIn2 = document.getElementById("pass2");
+    const passHelp = document.getElementById("passHelp");
+    function ChangePasword() {
+        let pass1 = passIn1.value;
+        let pass2 = passIn2.value;
+
+        if (pass1 !== pass2) {
+            passHelp.innerText = "Пароли не совпадают!";
+            passHelp.classList.add("text-danger");
+            return
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/users/change_password");
+        xhr.send(pass1);
+        xhr.onload = () => {
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при изменении пароля, статус код ответа ${xhr.status}`)) return;
+            window.location.replace("/login");
+        }
+
+    }
+    function ResetPassForm() {
+        passIn1.value = "";
+        passIn2.value = "";
+        passHelp.innerText = "Повторите пороль";
+        passHelp.classList.remove("text-danger");
+
+    }
+</script>
 {{ end }}

@@ -7,7 +7,7 @@ import (
 
 func Trace(err error) error {
 	_, f, l, _ := runtime.Caller(1)
-	return fmt.Errorf("%s:%d > %w", trimPath(f), l, err) //f[strings.LastIndex(f, "/")+1:]
+	return fmt.Errorf("%s:%d > %w", trimPath(f), l, err)
 }
 
 func trimPath(path string) string {

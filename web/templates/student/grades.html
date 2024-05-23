@@ -55,7 +55,8 @@
         }
         #grades {
             width: 100%;
-
+            overflow-x: auto;
+            overflow-y: hidden;
         }
 
         .vert {
@@ -90,6 +91,9 @@
         }
         .flex-wr {
             flex-wrap: wrap;
+        }
+        .max-content {
+            width: max-content;
         }
     </style>
 </head>
@@ -182,7 +186,7 @@
         xhr.responseType = "json";
         xhr.onload = () => {
             spinner_wrap.innerHTML = ""
-            if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return
 
             console.log(xhr.response)
 
@@ -204,7 +208,7 @@
         xhr.responseType = "json";
         xhr.onload = () => {
             spinner_wrap.innerHTML = ""
-            if (!handleResponseCode(xhr.status, "/student/login", `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return;
+            if (!handleResponseCode(xhr.status, `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return;
             console.log(xhr.response);
 
             document.getElementById("this-grades").innerHTML = `${CoursesRims[course]} курс, итог`;
@@ -257,7 +261,7 @@
         let grade_td = document.createElement("td");
         grade_td.style.color = getGradeColor(value);
         grade_td.style.width = "45px"
-        grade_td.innerHTML = `<p class="fw-semibold fs-5 mp-0">${value}</p>`
+        grade_td.innerHTML = `<p class="fw-semibold fs-5 mp-0 max-content">${value}</p>`
         return grade_td
     }
 
@@ -362,6 +366,10 @@
                 return "#dc3545"
             case "н":
                 return "#6c757d"
+            case "н/з":
+                return "#dc3545"
+            case "н/а":
+                return "#dc3545"
         }
 
         return "#6c757d"

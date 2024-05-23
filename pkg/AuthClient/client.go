@@ -15,15 +15,14 @@ type Client struct {
 	permissionClient ssoV1.PermissionsClient
 }
 
-var (
-	ErrNilResponse = errors.New("nil response")
-)
+var ErrNilResponse = errors.New("error nil response")
 
 func New(host string, port string, appKey string) (*Client, error) {
 	addr := net.JoinHostPort(host, port)
 	cc, err := grpc.DialContext(context.Background(),
 		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 
 	if err != nil {
 		return nil, err
@@ -52,8 +51,8 @@ func (c *Client) Login(ctx context.Context, login string, password string) (stri
 		Login:    login,
 		Password: password,
 	})
-	if err != nil {
-		return "", err
+	if req == nil {
+		return "", ErrNilResponse
 	}
 	return req.Token, err
 }
@@ -72,7 +71,15 @@ func (c *Client) UpdateLogin(ctx context.Context, login string, newLogin string)
 		Login:    login,
 		NewLogin: newLogin,
 	})
+	return err
+}
 
+func (c *Client) ChangePassword(ctx context.Context, login string, newPassword string) error {
+	_, err := c.authClient.ChangePassword(ctx, &ssoV1.ChangePasswordRequest{
+		AppKey:      c.appKey,
+		Login:       login,
+		NewPassword: newPassword,
+	})
 	return err
 }
 
@@ -81,8 +88,8 @@ func (c *Client) ParseToken(ctx context.Context, token string) (login string, er
 		AppKey: c.appKey,
 		Token:  token,
 	})
-	if err != nil {
-		return "", err
+	if req == nil {
+		return "", ErrNilResponse
 	}
 	return req.Login, err
 }
@@ -92,8 +99,8 @@ func (c *Client) TestUserOnExist(ctx context.Context, login string) (bool, error
 		AppKey: c.appKey,
 		Login:  login,
 	})
-	if err != nil {
-		return false, err
+	if req == nil {
+		return false, ErrNilResponse
 	}
 	return req.Exist, err
 }
@@ -103,8 +110,8 @@ func (c *Client) GetPermission(ctx context.Context, login string) (int32, error)
 		AppKey: c.appKey,
 		Login:  login,
 	})
-	if err != nil {
-		return 0, err
+	if req == nil {
+		return 0, ErrNilResponse
 	}
 	return req.Permission, err
 }

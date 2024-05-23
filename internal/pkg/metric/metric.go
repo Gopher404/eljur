@@ -127,3 +127,7 @@ func HandleRequest() {
 func HandleRender() {
 	atomic.AddInt32(&renderPerSecond, 1)
 }
+
+func GetRPS() int32 {
+	return rps
+}

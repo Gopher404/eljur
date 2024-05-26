@@ -2,3 +2,4 @@
 .git
 config/config.yaml
 log.json
+internal/service/schedule/parser_test.go

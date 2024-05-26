@@ -40,10 +40,18 @@ type Subjects interface {
 	Delete(ctx context.Context, id int) error
 }
 
+type Schedule interface {
+	GetAll(ctx context.Context) ([]models.Lesson, error)
+	GetByWeek(ctx context.Context, week int8) ([]models.Lesson, error)
+	Update(ctx context.Context, lesson *models.LessonForUpdate) error
+	Delete(ctx context.Context, id int) error
+}
+
 type Storage struct {
 	Users    Users
 	Grades   Grades
 	Subjects Subjects
+	Schedule Schedule
 	Tx       *transaction.TxManager
 }
 
@@ -62,6 +70,7 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 		Users:    data.NewUsersStorage(db),
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
+		Schedule: data.NewScheduleStorage(db),
 		Tx:       txManager,
 	}, nil
 }

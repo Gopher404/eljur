@@ -21,8 +21,8 @@ func (h *Handler) mw(handler http.HandlerFunc) http.HandlerFunc {
 			body = []byte{}
 		}
 
-		h.l.Info("req", "URL", r.URL.String(), "Method", r.Method, "Remote", r.RemoteAddr, "RPS", metric.GetRPS(), "body", string(body))
 		metric.HandleRequest()
+		h.l.Info("req", "URL", r.URL.String(), "Method", r.Method, "Remote", r.RemoteAddr, "RPS", metric.GetRPS(), "body", string(body))
 
 		handler(w, r)
 	}

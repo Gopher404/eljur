@@ -3,6 +3,7 @@ package httpServer
 import (
 	"eljur/internal/pkg/metric"
 	"eljur/internal/service/grades"
+	schedules "eljur/internal/service/schedule"
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
 	"eljur/pkg/AuthClient"
@@ -14,24 +15,27 @@ import (
 )
 
 type Handler struct {
-	l              *slog.Logger
-	gradesService  *grades.GradeService
-	usersService   *users.UserService
-	subjectService *subjects.SubjectService
-	auth           *AuthClient.Client
+	l               *slog.Logger
+	gradesService   *grades.GradeService
+	usersService    *users.UserService
+	subjectService  *subjects.SubjectService
+	scheduleService *schedules.ScheduleService
+	auth            *AuthClient.Client
 }
 
 func NewHandler(l *slog.Logger,
 	gradesService *grades.GradeService,
 	usersService *users.UserService,
 	subjectService *subjects.SubjectService,
+	scheduleService *schedules.ScheduleService,
 	auth *AuthClient.Client) *Handler {
 	return &Handler{
-		l:              l,
-		gradesService:  gradesService,
-		usersService:   usersService,
-		subjectService: subjectService,
-		auth:           auth,
+		l:               l,
+		gradesService:   gradesService,
+		usersService:    usersService,
+		subjectService:  subjectService,
+		scheduleService: scheduleService,
+		auth:            auth,
 	}
 }
 
@@ -52,6 +56,7 @@ func (h *Handler) setEndpoints(rtr *mux.Router) {
 	h.setGradesEndpoints(rtr, "/grades")
 	h.setUsersEndpoints(rtr, "/users")
 	h.setSubjectsEndpoints(rtr, "/subjects")
+	h.setScheduleEndpoints(rtr, "/schedule")
 }
 
 type Message struct {

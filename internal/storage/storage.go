@@ -12,9 +12,10 @@ import (
 )
 
 type Users interface {
-	NewUser(ctx context.Context, name, login string) (int, error)
+	NewUser(ctx context.Context, user models.User) (int, error)
 	GetById(ctx context.Context, id int) (user *models.User, err error)
 	GetId(ctx context.Context, login string) (int, error)
+	GetGroup(ctx context.Context, login string) (int8, error)
 	GetAll(ctx context.Context) ([]*models.User, error)
 	Update(ctx context.Context, user models.User) error
 	Delete(ctx context.Context, id int) error
@@ -43,7 +44,8 @@ type Subjects interface {
 type Schedule interface {
 	GetAll(ctx context.Context) ([]models.Lesson, error)
 	GetByWeek(ctx context.Context, week int8) ([]models.Lesson, error)
-	Update(ctx context.Context, lesson *models.LessonForUpdate) error
+	New(ctx context.Context, lesson *models.Lesson) error
+	Update(ctx context.Context, lesson *models.Lesson) error
 	Delete(ctx context.Context, id int) error
 }
 
@@ -67,7 +69,7 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 	txManager := transaction.NewTxManager(db)
 
 	return &Storage{
-		Users:    data.NewUsersStorage(db),
+		Users:    data.NewUsersTestStorage(db),
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
 		Schedule: data.NewScheduleStorage(db),

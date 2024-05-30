@@ -31,6 +31,10 @@ func (h *Handler) setAdminEndpoints(rtr *mux.Router, url string) {
 		h.mw(h.handleAdminMetricXLSX),
 	).Methods("GET")
 
+	rtr.HandleFunc(url+"/schedule",
+		h.mw(h.handleAdminSchedule),
+	).Methods("GET")
+
 }
 
 type adminGradesTmpData struct {
@@ -135,4 +139,20 @@ func (h *Handler) handleAdminMetricXLSX(w http.ResponseWriter, r *http.Request) 
 
 	http.ServeContent(w, r, "logs.xlsx", time.Now(), logs)
 
+}
+
+func (h *Handler) handleAdminSchedule(w http.ResponseWriter, r *http.Request) {
+	login, ok := h.authenticate(r, models.PermAdmin)
+	if !ok {
+		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
+		redirect(w, "/login")
+		return
+	}
+	data := new(headerTmpData)
+	if err := h.SetHeaderData(r.Context(), data, "schedule", login); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+
+	h.renderTemplate(w, data, "admin/schedule.html", "admin/header.html")
 }

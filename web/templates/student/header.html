@@ -9,6 +9,7 @@
     <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
         {{ $active_page := index .TmpData "active-page" }}
         <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq $active_page "grades" }} border-bottom {{end}}" href="/student/grades">Оценки</a>
+        <a class="me-3 py-2 link-body-emphasis text-decoration-none {{ if eq $active_page "schedule" }} border-bottom {{end}}" href="/student/schedule">Расписание</a>
         {{ if index .TmpData "is-admin" }}
         <a class="me-3 py-2 link-body-emphasis text-decoration-none" href="/admin/grades">Админ панель</a>
         {{ end }}

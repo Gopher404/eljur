@@ -28,3 +28,7 @@ function LogOut() {
     deleteCookie("token");
     window.location.href = "/login"
 }
+
+function deleteFromList(items, index) {
+    return [...items.slice(0, index), ...items.slice(index + 1)]
+}

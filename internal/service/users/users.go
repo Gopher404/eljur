@@ -42,6 +42,7 @@ type SaveUsersIn struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`
 	Login    string `json:"login"`
+	Group    int8   `json:"group"`
 	Password string `json:"password"`
 	Perm     int32  `json:"perm"`
 }
@@ -68,7 +69,11 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 				_ = u.storage.Tx.Rollback(ctx)
 				return tr.Trace(err)
 			}
-			id, err := u.storage.Users.NewUser(ctx, user.Name, user.Login)
+			id, err := u.storage.Users.NewUser(ctx, models.User{
+				FullName: user.Name,
+				Login:    user.Login,
+				Group:    user.Group,
+			})
 			if err != nil {
 				return tr.Trace(err)
 			}
@@ -100,6 +105,7 @@ func (u *UserService) Save(ctx context.Context, users []SaveUsersIn) error {
 				Id:       user.Id,
 				FullName: user.Name,
 				Login:    user.Login,
+				Group:    user.Group,
 			}); err != nil {
 				return tr.Trace(err)
 			}
@@ -134,6 +140,7 @@ type UserWithPerm struct {
 	Id    int    `json:"id"`
 	Name  string `json:"name"`
 	Login string `json:"login"`
+	Group int8   `json:"group"`
 	Perm  int32  `json:"perm"`
 }
 
@@ -152,6 +159,7 @@ func (u *UserService) GetAll(ctx context.Context) ([]UserWithPerm, error) {
 			Id:    user.Id,
 			Name:  user.FullName,
 			Login: user.Login,
+			Group: user.Group,
 			Perm:  perm,
 		})
 	}
@@ -175,6 +183,7 @@ func (u *UserService) GetUser(ctx context.Context, login string) (*UserWithPerm,
 		Id:    user.Id,
 		Name:  user.FullName,
 		Login: user.Login,
+		Group: user.Group,
 		Perm:  perm,
 	}
 	return userWithPerm, nil

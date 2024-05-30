@@ -28,8 +28,8 @@ func (s *Schedule) GetAll(ctx context.Context) ([]models.Lesson, error) {
 
 	for rows.Next() {
 		var lesson models.Lesson
-		err := rows.Scan(&lesson.Id, &lesson.Week, &lesson.Number, &lesson.WeekDay,
-			&lesson.Auditorium, &lesson.Name, &lesson.Teacher)
+		err := rows.Scan(&lesson.Id, &lesson.Week, &lesson.WeekDay, &lesson.Number,
+			&lesson.Auditorium, &lesson.Name, &lesson.Teacher, &lesson.Group)
 		if err == sql.ErrNoRows {
 			return lessons, nil
 		}
@@ -52,8 +52,8 @@ func (s *Schedule) GetByWeek(ctx context.Context, week int8) ([]models.Lesson, e
 
 	for rows.Next() {
 		var lesson models.Lesson
-		err := rows.Scan(&lesson.Id, &lesson.Week, &lesson.Number, &lesson.WeekDay,
-			&lesson.Auditorium, &lesson.Name, &lesson.Teacher)
+		err := rows.Scan(&lesson.Id, &lesson.Week, &lesson.WeekDay, &lesson.Number,
+			&lesson.Auditorium, &lesson.Name, &lesson.Teacher, &lesson.Group)
 		if err == sql.ErrNoRows {
 			return lessons, nil
 		}
@@ -66,16 +66,27 @@ func (s *Schedule) GetByWeek(ctx context.Context, week int8) ([]models.Lesson, e
 	return lessons, nil
 }
 
-func (s *Schedule) Update(ctx context.Context, lesson *models.LessonForUpdate) error {
-	if _, err := s.Exec(ctx, "UPDATE lessons SET auditorium=?, name=?, teacher=? WHERE id=?",
-		&lesson.Auditorium, lesson.Name, lesson.Teacher, lesson.Id); err != nil {
+func (s *Schedule) New(ctx context.Context, lesson *models.Lesson) error {
+	res, err := s.Exec(ctx, "INSERT INTO lessons (week, week_day, number, auditorium, name, teacher, user_group) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		lesson.Week, lesson.WeekDay, lesson.Number, lesson.Auditorium, lesson.Name, lesson.Teacher, lesson.Group)
+	if err != nil {
+		return tr.Trace(err)
+	}
+	id, _ := res.LastInsertId()
+	lesson.Id = int(id)
+	return nil
+}
+
+func (s *Schedule) Update(ctx context.Context, lesson *models.Lesson) error {
+	if _, err := s.Exec(ctx, "UPDATE lessons SET week=?, week_day=?, number=?, auditorium=?, name=?, teacher=?, user_group=? WHERE id=?",
+		lesson.Week, lesson.WeekDay, lesson.Number, lesson.Auditorium, lesson.Name, lesson.Teacher, lesson.Group, lesson.Id); err != nil {
 		return tr.Trace(err)
 	}
 	return nil
 }
 
 func (s *Schedule) Delete(ctx context.Context, id int) error {
-	if _, err := s.Exec(ctx, "DELETE FROM lesson WHERE id=?", id); err != nil {
+	if _, err := s.Exec(ctx, "DELETE FROM lessons WHERE id=?", id); err != nil {
 		return err
 	}
 	return nil

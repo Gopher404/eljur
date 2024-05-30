@@ -1,39 +1,40 @@
 package schedules
 
 import (
+	"eljur/internal/config"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-const token = "vk1.a.A4lLFx-zbGgGOAYN8IIxoZPSpJ4_Ye4qj4psKCvR7RAkZNrhHD713uz3JtFyd6oQpVXQdWCe7N-USI2SaosdrjIZAXmfO1PB9_DbL0Z6JbS0WA0BlzM8VpmAVUHiwl0ob4-qtvPI_zODFYDPM10flVNvJc5AqPspsZymVGH2G6mzoqa7fKeMzKic-CLgS64AWSJzuApx2Te1d-LtqqXMog"
-
 func TestGetWeekFromDocument(t *testing.T) {
-	parser := newParser(-193901024, token)
-	docs, err := parser.getListDocuments()
-	require.NoError(t, err, "get list docs error")
+	cnf, err := config.GetConfig("C:\\Users\\79212\\GolandProjects\\eljur\\config\\config.yaml")
+	fmt.Printf("%+v", cnf)
+	api := newVKAPI(cnf.Schedule.VKAPI.Version)
+	p := newParser(api, cnf.Schedule.VKSever, cnf.Schedule.VKAPI.CacheTTL)
 
-	doc, err := parser.getDocument(docs[0])
-	require.NoError(t, err, "get document error")
+	docsInf, err := p.getListDocuments(cnf.Schedule.VKAPI.GroupId)
+	require.NoError(t, err)
 
-	week := parser.getWeekFromDocument(doc)
-	fmt.Println("week:", week)
+	doc, err := p.getDocument(docsInf[0])
+	require.NoError(t, err)
+
+	week := p.getWeekFromDocument(doc)
+	fmt.Println(week)
 }
 
 func TestGetChangesFromDocument(t *testing.T) {
+	cnf, err := config.GetConfig("C:\\Users\\79212\\GolandProjects\\eljur\\config\\config.yaml")
+	fmt.Printf("%+v", cnf)
+	api := newVKAPI(cnf.Schedule.VKAPI.Version)
+	p := newParser(api, cnf.Schedule.VKSever, cnf.Schedule.VKAPI.CacheTTL)
 
-	parser := newParser(-193901024, token)
-	//testS := "Код будущего Куликовский М.Ю. Инф. Куликовский М.Ю. Минеев-Ли В.Е. 302,305"
-	//_, _, i1, i2 := parser.extractNameS(testS)
-	//fmt.Println(testS[i1:i2])
-	//return
+	docsInf, err := p.getListDocuments(cnf.Schedule.VKAPI.GroupId)
+	require.NoError(t, err)
 
-	docs, err := parser.getListDocuments()
-	require.NoError(t, err, "get list docs error")
+	doc, err := p.getDocument(docsInf[0])
+	require.NoError(t, err)
 
-	doc, err := parser.getDocument(docs[0])
-	require.NoError(t, err, "get document error")
-
-	changes := parser.getChangesFromDocument(doc, "ИС11")
-	fmt.Printf("changes: %+v", changes)
+	ch := p.getChangesFromDocument(doc, cnf.Schedule.GroupName)
+	fmt.Println(ch)
 }

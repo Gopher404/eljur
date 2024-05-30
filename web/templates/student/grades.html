@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -182,7 +182,7 @@
 
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/grades/by_month_and_user");
-        xhr.send(JSON.stringify({"month": month, "course": course}))
+        xhr.send(JSON.stringify({"month": month, "course": course}));
         xhr.responseType = "json";
         xhr.onload = () => {
             spinner_wrap.innerHTML = ""

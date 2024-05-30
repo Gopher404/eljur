@@ -2,73 +2,141 @@ package schedules
 
 import (
 	"bytes"
+	"eljur/internal/config"
 	"eljur/pkg/tr"
-	"encoding/json"
 	"fmt"
 	"github.com/ledongthuc/pdf"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
-func newParser(vkGroupID int64, vkAccessToken string) *Parser {
-	pdf.DebugOn = true
-	return &Parser{
-		vkGroupID:     vkGroupID,
-		vkAccessToken: vkAccessToken,
+type docsGetter interface {
+	DocsGet(token string, groupId string) (*documentsResp, error)
+}
+
+func newDocsWithCache(api docsGetter, cacheTTL time.Duration) docsGetter {
+	docsGetrWithCache := &docsGetterWithCache{
+		api:   api,
+		cache: make(map[string]*documentsResp),
 	}
+	go func() {
+		time.Sleep(cacheTTL)
+		for k := range docsGetrWithCache.cache {
+			delete(docsGetrWithCache.cache, k)
+		}
+	}()
+	return docsGetrWithCache
+}
+
+type docsGetterWithCache struct {
+	api   docsGetter
+	cache map[string]*documentsResp
+}
+
+func (c *docsGetterWithCache) DocsGet(token string, groupId string) (*documentsResp, error) {
+	resp, ok := c.cache[token+"&"+groupId]
+	if ok {
+		return resp, nil
+	}
+
+	resp, err := c.api.DocsGet(token, groupId)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	c.cache[token+"&"+groupId] = resp
+	return resp, nil
+}
+
+func newParser(api docsGetter, vkServerConf config.VKSeverConfig, cacheTTL time.Duration) *Parser {
+	pdf.DebugOn = true
+
+	parser := &Parser{
+		vkAPI:        newDocsWithCache(api, cacheTTL),
+		vkServerConf: vkServerConf,
+	}
+	token, _ := getVkToken(vkServerConf)
+	parser.token = token
+	return parser
 }
 
 type Parser struct {
-	vkGroupID     int64
-	vkAccessToken string
+	vkAPI        docsGetter
+	token        string
+	vkServerConf config.VKSeverConfig
 }
 
-type document struct {
-	Title string `json:"title"`
-	Ext   string `json:"ext"`
-	Url   string `json:"url"`
-	Size  int64  `json:"size"`
+func newVkErr(status int, msg string) error {
+	return fmt.Errorf("vk error: code %d msg %s", status, msg)
 }
 
-type documentsResp struct {
-	Error *struct {
-		Code int    `json:"error_code"`
-		Msg  string `json:"error_msg"`
-	} `json:"error"`
-	Response struct {
-		Count int        `json:"count"`
-		Items []document `json:"items"`
-	} `json:"response"`
-}
-
-const vkGetDocsUrlTmpl = "https://api.vk.com/method/docs.get?owner_id=%d&v=5.236&access_token=%s"
-
-func (p *Parser) getListDocuments() ([]document, error) {
-	resp, err := http.Get(fmt.Sprintf(vkGetDocsUrlTmpl, p.vkGroupID, p.vkAccessToken))
-	if err != nil {
-		return nil, tr.Trace(err)
-	}
-	body, err := io.ReadAll(resp.Body)
+func (p *Parser) getListDocuments(groupId string) ([]*documentInfo, error) {
+	resp, err := p.vkAPI.DocsGet(p.token, groupId)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
 
-	var docsResp documentsResp
+	if resp.Error != nil {
+		if resp.Error.Code == 5 {
+			token, err := getVkToken(p.vkServerConf)
+			if err != nil {
+				return nil, tr.Trace(fmt.Errorf("error get token: %e, > %e",
+					err, newVkErr(resp.Error.Code, resp.Error.Msg)))
+			}
+			p.token = token
 
-	if err := json.Unmarshal(body, &docsResp); err != nil {
+		} else {
+			return nil, tr.Trace(newVkErr(resp.Error.Code, resp.Error.Msg))
+		}
+	}
+	resp, err = p.vkAPI.DocsGet(p.token, groupId)
+	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	if docsResp.Error != nil {
-		return nil, fmt.Errorf("vk error: code %d msg %s", docsResp.Error.Code, docsResp.Error.Msg)
+	if resp.Error != nil {
+		return nil, tr.Trace(newVkErr(resp.Error.Code, resp.Error.Msg))
 	}
-	fmt.Printf("%+v\n", docsResp)
-	return docsResp.Response.Items, nil
+	fmt.Printf("%+v\n", resp)
+	return resp.Response.Items, nil
 }
 
-func (p *Parser) getWeekFromDocument(doc string) string {
+func (*Parser) getDateFromDocInfo(docInfo *documentInfo) (time.Time, bool) {
+	lensDigit := []int{0, 1, 3, 4, 6, 7, 8, 9}
+	lensDot := []int{2, 5}
+	dateS := ""
+	for _, r := range docInfo.Title {
+		a := string(r)
+		if unicode.IsDigit(r) && slices.Index(lensDigit, len(dateS)) > -1 {
+			dateS += a
+			continue
+		}
+		if a == "." && slices.Index(lensDot, len(dateS)) > -1 {
+			dateS += a
+			continue
+		}
+		if len(dateS) == 10 {
+			break
+		}
+		dateS = ""
+	}
+
+	if len(dateS) != 10 {
+		return time.Time{}, false
+	}
+
+	date, err := time.Parse(dateLayout, dateS)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return date, true
+}
+
+func (*Parser) getWeekFromDocument(doc string) string {
 	const searchText = "("
 	idx := strings.Index(doc, searchText)
 
@@ -156,12 +224,12 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 		ch.Auditorium = sl[len(sl)-1]
 		name2 := ""
 		fi := 0
-		if sl[len(sl)-1] == "НИЧЕГО" {
+		if strings.ToLower(sl[len(sl)-1]) == "ничего" {
 			ch.Auditorium = ""
-			ch.Name = "НИЧЕГО"
+			ch.Name = "ничего"
 
-		} else if sl[len(sl)-3] == "Замена" {
-			ch.Name = "замена"
+		} else if strings.ToLower(sl[len(sl)-3]) == "замена" {
+			ch.Name = "з/а"
 
 		} else {
 			if isInits(sl[len(sl)-2]) {
@@ -181,7 +249,7 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 			}
 			ch.Teacher = name2
 			for i := fi; i >= 0; i-- {
-				if !isInits(sl[i]) {
+				if !isInits(sl[i]) && strings.ToLower(sl[i]) != "ничего" {
 					ch.Name = sl[i] + " " + ch.Name
 				} else {
 					break
@@ -195,12 +263,14 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 	return changes
 }
 
-func (p *Parser) getDocument(docInfo document) (string, error) {
+func (p *Parser) getDocument(docInfo *documentInfo) (string, error) {
 	resp, err := http.Get(docInfo.Url)
 	if err != nil {
 		return "", tr.Trace(err)
 	}
-
+	if resp.StatusCode != 200 {
+		return "", tr.Trace(fmt.Errorf("error get file, status: %d", resp.StatusCode))
+	}
 	readerAt, err := readerToReaderAt(resp.Body)
 	if err != nil {
 		return "", tr.Trace(err)

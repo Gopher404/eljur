@@ -61,7 +61,7 @@
 <!-- Модальное окно -->
 <div class="modal fade" id="modal-new-user" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 600px">
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-auto">
@@ -75,6 +75,10 @@
                             <option value="1" selected>Студент</option>
                             <option value="2">Админ</option>
                         </select>
+                    </div>
+                    <div class="col-auto" style="width: 100px;">
+                        <label for="in_group" class="form-label">Подгруппа</label>
+                        <input type="number" id="in_group" class="form-control">
                     </div>
                     <div></div>
                     <div class="col-auto">
@@ -119,7 +123,7 @@
             console.log(xhr.response)
             Users = xhr.response
             let table = document.getElementById("users_tb")
-            table.innerHTML = `<tr><td>Id</td><td>Имя</td><td>Логин</td><td>Права</td></tr>`
+            table.innerHTML = `<tr><td>Id</td><td>Имя</td><td>Логин</td><td>Права</td><td>Подгруппа</td></tr>`
             for (let user of Users) {
                 let tr = createUserTr(user)
                 table.appendChild(tr)
@@ -177,11 +181,22 @@
         tdPerm.appendChild(select)
         tr.appendChild(tdPerm)
 
+        let tdGroup = document.createElement("td")
+        let inGroup = document.createElement("input")
+        inGroup.setAttribute("user_id", `${user.id}`)
+        inGroup.setAttribute("data_type", "group")
+        inGroup.style.maxWidth = "40px"
+        inGroup.value = user.group
+        tdGroup.appendChild(inGroup)
+        tr.appendChild(tdGroup)
+
         tr.onchange = (ev) => {
+            console.log(ev.target.parentElement.parentElement.children)
             let id = Number.parseInt(ev.target.parentElement.parentElement.id)
             let name = ev.target.parentElement.parentElement.children[1].children[0].value
             let login = ev.target.parentElement.parentElement.children[2].children[0].value
             let perm = Number.parseInt(ev.target.parentElement.parentElement.children[3].children[0].value)
+            let group = Number.parseInt(ev.target.parentElement.parentElement.children[4].children[0].value)
 
             let f = true
             for (let userS of SaveList) {
@@ -189,6 +204,7 @@
                     userS.name = name
                     userS.login = login
                     userS.perm = perm
+                    userS.group = group
                     f = false
                 }
             }
@@ -198,7 +214,8 @@
                     "id":     id,
                     "name":   name,
                     "login":  login,
-                    "perm":   perm
+                    "perm":   perm,
+                    "group": group,
                 })
             }
 
@@ -244,6 +261,7 @@
         let in_login = document.getElementById("in_login"); let login = in_login.value;
         let in_pass = document.getElementById("in_pass");   let pass = in_pass.value;
         let in_perm = document.getElementById("in_perm");   let perm = Number.parseInt(in_perm.value);
+        let in_group = document.getElementById("in_perm");   let group = Number.parseInt(in_group.value);
 
         if (name === "" || login === "" || pass === "") {
             document.getElementById("form_message").innerText = "Все поля должны быть заполнены!";
@@ -257,6 +275,7 @@
             "login":  login,
             "password": pass,
             "perm":   perm,
+            "group": group,
         })
 
         document.getElementById("users_tb").appendChild(createUserTr({
@@ -265,12 +284,14 @@
             "name":   name,
             "login":  login,
             "perm":   perm,
+            "group": group,
         }))
         document.getElementById("modal-close").click()
         in_name.value = ""
         in_login.value = ""
         in_pass.value = ""
         in_perm.value = 1
+        in_group.value = 1
     }
 
     SetUsers()

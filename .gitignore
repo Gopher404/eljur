@@ -1,5 +1,7 @@
 .idea
 .git
-config/config.yaml
+venv
+config
+**/__pycache__
 log.json
-internal/service/schedule/parser_test.go
+internal/storage/mysql/test_users.go

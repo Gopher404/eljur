@@ -13,6 +13,7 @@
         }
         td {
             border: 0;
+            padding: 3px;
         }
 
         .red-dot {
@@ -33,26 +34,41 @@
             margin-top: 15px;
             margin-bottom: 5px;
         }
-
+        .change-lesson {
+            border-radius: 1px;
+            background-color: lightblue;
+            box-shadow: lightblue 1px 1px 1px 1px;
+        }
+        .day-name {
+            font-size: large;
+        }
     </style>
     <title>Расписание</title>
 </head>
 <body>
 {{ template "header" . }}
-<h3 id="week-name"></h3>
+<h3 id="week-name">Неделя -</h3>
 <div class="schedule-wrap">
-    <p id="day-0">Подельник</p>
+    <p id="day-0" class="day-name">Подельник</p>
     <table id="tb-0"></table>
-    <p id="day-1">Вторник</p>
+    <hr>
+    <p id="day-1" class="day-name">Вторник</p>
     <table id="tb-1"></table>
-    <p id="day-2">Среда</p>
+    <hr>
+    <p id="day-2" class="day-name">Среда</p>
     <table id="tb-2"></table>
-    <p id="day-3">Четверг</p>
+    <hr>
+    <p id="day-3" class="day-name">Четверг</p>
     <table id="tb-3"></table>
-    <p id="day-4">Пятница</p>
+    <hr>
+    <p id="day-4" class="day-name">Пятница</p>
     <table id="tb-4"></table>
-    <p id="day-5">Суббота</p>
+    <hr>
+    <p id="day-5" class="day-name">Суббота</p>
     <table id="tb-5"></table>
+    <hr>
+    <p id="day-6" class="day-name">Понедельник</p>
+    <table id="tb-6"></table>
 </div>
 
 
@@ -66,7 +82,7 @@
             if (!handleResponseCode(xhr.status, `Произошла ошибка при получении оценок, статус код ответа ${xhr.status}`)) return;
             console.log(xhr.response);
 
-            document.getElementById("week-name").innerText = xhr.response.week_type;
+            document.getElementById("week-name").innerText += " " + xhr.response.week_type;
 
             for (let day of xhr.response.days) {
                 let dayE = document.getElementById(`day-${day.week_day}`)
@@ -78,6 +94,7 @@
             }
             let currentDay = document.getElementById(`day-${xhr.response.current_day}`);
             currentDay.innerHTML = "<div class='red-dot'></div>" + currentDay.innerText;
+            currentDay.style.fontWeight = "500";
 
         }
     }
@@ -89,7 +106,7 @@
         }
 
         tr.innerHTML = `
-       <td>${lesson.number}</td>
+       <td>${lesson.number}.</td>
        <td>${lesson.name}</td>
        <td>${lesson.teacher}</td>
        <td>${lesson.auditorium}</td>

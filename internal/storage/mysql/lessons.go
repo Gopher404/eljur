@@ -66,6 +66,30 @@ func (s *Schedule) GetByWeek(ctx context.Context, week int8) ([]models.Lesson, e
 	return lessons, nil
 }
 
+func (s *Schedule) GetByWeekAndDay(ctx context.Context, week int8, day int8) ([]models.Lesson, error) {
+	var lessons []models.Lesson
+
+	rows, err := s.Query(ctx, "SELECT * FROM lessons WHERE week=? AND week_day=?;", week, day)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	for rows.Next() {
+		var lesson models.Lesson
+		err := rows.Scan(&lesson.Id, &lesson.Week, &lesson.WeekDay, &lesson.Number,
+			&lesson.Auditorium, &lesson.Name, &lesson.Teacher, &lesson.Group)
+		if err == sql.ErrNoRows {
+			return lessons, nil
+		}
+		if err != nil {
+			return nil, tr.Trace(err)
+		}
+		lessons = append(lessons, lesson)
+	}
+
+	return lessons, nil
+}
+
 func (s *Schedule) New(ctx context.Context, lesson *models.Lesson) error {
 	res, err := s.Exec(ctx, "INSERT INTO lessons (week, week_day, number, auditorium, name, teacher, user_group) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		lesson.Week, lesson.WeekDay, lesson.Number, lesson.Auditorium, lesson.Name, lesson.Teacher, lesson.Group)

@@ -11,7 +11,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode"
 )
 
 type UserGroupGetter interface {
@@ -70,13 +69,28 @@ func newWeekSchedule() *WeekSchedule {
 type WeekSchedule struct {
 	CurrentDay int8            `json:"current_day"`
 	WeekType   string          `json:"week_type"`
-	Days       [6]*DaySchedule `json:"days"`
+	Days       [7]*DaySchedule `json:"days"`
 }
 
 func (s *WeekSchedule) sort() {
 	for _, d := range s.Days {
 		slices.SortFunc(d.Lessons, func(a, b Lesson) int {
 			return int(a.Number - b.Number)
+		})
+	}
+}
+
+func (s *WeekSchedule) addLessons(lessons []models.Lesson, userGroup int8) {
+	for _, lesson := range lessons {
+		if lesson.Group != userGroup && lesson.Group != 0 {
+			continue
+		}
+		s.Days[lesson.WeekDay].Lessons = append(s.Days[lesson.WeekDay].Lessons, Lesson{
+			Number:     lesson.Number,
+			Name:       lesson.Name,
+			Teacher:    lesson.Teacher,
+			Auditorium: lesson.Auditorium,
+			IsChange:   false,
 		})
 	}
 }
@@ -127,6 +141,7 @@ const dateLayout = "02.01.2006"
 func updateLesson(lesson1, lesson2 *Lesson) {
 	if lesson2.Name == "з/а" {
 		lesson1.Auditorium = lesson2.Auditorium
+		lesson1.IsChange = lesson2.IsChange
 	} else if lesson2.Name == "ничего" {
 		*lesson1 = Lesson{Number: lesson2.Number, Name: "Ничего", IsChange: lesson2.IsChange}
 	} else {
@@ -190,28 +205,30 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
+
 	weekSchedule := newWeekSchedule()
-	weekSchedule.WeekType = string(unicode.ToUpper([]rune(week)[0])) + string([]rune(week)[1:])
+	weekSchedule.WeekType = week //string(unicode.ToUpper([]rune(week)[0])) + string([]rune(week)[1:])
 	weekSchedule.CurrentDay = weekDay.Num
 
-	for _, lesson := range lessons {
-		if lesson.Group != userGroup && lesson.Group != 0 {
-			continue
-		}
-		weekSchedule.Days[lesson.WeekDay].Lessons = append(weekSchedule.Days[lesson.WeekDay].Lessons, Lesson{
-			Number:     lesson.Number,
-			Name:       lesson.Name,
-			Teacher:    lesson.Teacher,
-			Auditorium: lesson.Auditorium,
-			IsChange:   false,
-		})
-	}
+	weekSchedule.addLessons(lessons, userGroup)
+
 	for i, day := range weekSchedule.Days {
 		day.date = now.Add(time.Duration(int8(i)-weekDay.Num) * time.Hour * 24)
 		day.Dates = day.date.Format(dateLayout)
 		day.WeekDay = weekDays[day.date.Format("Mon")].Num
 		//fmt.Println(weekDays[day.date.Format("Mon")], day.date.Format(time.DateTime))
 	}
+
+	lessons, err = s.storage.Schedule.GetByWeekAndDay(ctx, revertWeek(weekN), 0)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+	for i := range lessons {
+		lessons[i].WeekDay = 6
+	}
+	weekSchedule.addLessons(lessons, userGroup)
+	weekSchedule.Days[6].date = weekSchedule.Days[5].date.Add(time.Hour * 24 * 2)
+	weekSchedule.Days[6].Dates = weekSchedule.Days[6].date.Format(dateLayout)
 
 	multiErr := newMultiError("set changes errors: ")
 	for _, docInf := range docsInf {
@@ -223,9 +240,12 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 			continue
 		}
 		dayOfWeek := weekDays[date.Format("Mon")]
-		//fmt.Println(now.Add(time.Duration(dayOfWeek.Num-weekDay.Num)*time.Hour*24).Format(dateLayout), date.Format(dateLayout))
+
 		if now.Add(time.Duration(dayOfWeek.Num-weekDay.Num)*time.Hour*24).Format(dateLayout) != date.Format(dateLayout) {
-			continue
+			if date.Format(dateLayout) != weekSchedule.Days[6].Dates {
+				continue
+			}
+			dayOfWeek = WeekDay{"Понедельник", 6}
 		}
 
 		doc, err := s.parser.getDocument(docInf)
@@ -246,6 +266,13 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 	return weekSchedule, multiErr
 }
 
+func revertWeek(week int8) int8 {
+	if week == 0 {
+		return 1
+	}
+	return 0
+}
+
 type LessonToSave struct {
 	Action     string `json:"action"`
 	Id         int    `json:"id"`
@@ -259,7 +286,6 @@ type LessonToSave struct {
 }
 
 func (s *ScheduleService) Save(ctx context.Context, saveList []LessonToSave) error {
-	fmt.Println(saveList)
 	for _, lesson := range saveList {
 		switch lesson.Action {
 		case "new":

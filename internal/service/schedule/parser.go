@@ -57,18 +57,28 @@ func newParser(api docsGetter, vkServerConf config.VKSeverConfig, cacheTTL time.
 	pdf.DebugOn = true
 
 	parser := &Parser{
-		vkAPI:        newDocsWithCache(api, cacheTTL),
-		vkServerConf: vkServerConf,
+		vkAPI:         newDocsWithCache(api, cacheTTL),
+		vkServerConf:  vkServerConf,
+		documentCache: make(map[string]string),
 	}
+	go func() {
+		for {
+			time.Sleep(cacheTTL)
+			for _, k := range parser.documentCache {
+				delete(parser.documentCache, k)
+			}
+		}
+	}()
 	token, _ := getVkToken(vkServerConf)
 	parser.token = token
 	return parser
 }
 
 type Parser struct {
-	vkAPI        docsGetter
-	token        string
-	vkServerConf config.VKSeverConfig
+	vkAPI         docsGetter
+	token         string
+	vkServerConf  config.VKSeverConfig
+	documentCache map[string]string
 }
 
 func newVkErr(status int, msg string) error {
@@ -101,7 +111,6 @@ func (p *Parser) getListDocuments(groupId string) ([]*documentInfo, error) {
 	if resp.Error != nil {
 		return nil, tr.Trace(newVkErr(resp.Error.Code, resp.Error.Msg))
 	}
-	fmt.Printf("%+v\n", resp)
 	return resp.Response.Items, nil
 }
 
@@ -222,6 +231,10 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 		sl := strings.Split(stringChange, " ")
 		sl = filterSlice(sl)
 		ch.Auditorium = sl[len(sl)-1]
+		s2 := sl[len(sl)-2]
+		if strings.Index(s2, "/") > -1 || (len(s2) < 4 && !isInits(s2)) {
+			ch.Auditorium = s2 + ch.Auditorium
+		}
 		name2 := ""
 		fi := 0
 		if strings.ToLower(sl[len(sl)-1]) == "ничего" {
@@ -264,6 +277,10 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 }
 
 func (p *Parser) getDocument(docInfo *documentInfo) (string, error) {
+	docS, ok := p.documentCache[docInfo.Url]
+	if ok {
+		return docS, nil
+	}
 	resp, err := http.Get(docInfo.Url)
 	if err != nil {
 		return "", tr.Trace(err)
@@ -287,7 +304,9 @@ func (p *Parser) getDocument(docInfo *documentInfo) (string, error) {
 	if err != nil {
 		return "", tr.Trace(err)
 	}
-	return string(b), nil
+	docS = string(b)
+	p.documentCache[docInfo.Url] = docS
+	return docS, nil
 }
 
 func readerToReaderAt(r io.Reader) (io.ReaderAt, error) {
@@ -299,18 +318,20 @@ func readerToReaderAt(r io.Reader) (io.ReaderAt, error) {
 }
 
 func filterSlice(sl []string) (res []string) {
-MAINLOOP:
 	for _, s := range sl {
 		if len(s) == 0 {
 			continue
 		}
+		f := false
 		for _, a := range s {
 			if string(a) != " " {
-				res = append(res, s)
-				continue MAINLOOP
+				f = true
+				break
 			}
 		}
-
+		if f {
+			res = append(res, s)
+		}
 	}
 	return
 }

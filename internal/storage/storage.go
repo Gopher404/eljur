@@ -44,6 +44,7 @@ type Subjects interface {
 type Schedule interface {
 	GetAll(ctx context.Context) ([]models.Lesson, error)
 	GetByWeek(ctx context.Context, week int8) ([]models.Lesson, error)
+	GetByWeekAndDay(ctx context.Context, week int8, day int8) ([]models.Lesson, error)
 	New(ctx context.Context, lesson *models.Lesson) error
 	Update(ctx context.Context, lesson *models.Lesson) error
 	Delete(ctx context.Context, id int) error
@@ -69,7 +70,7 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 	txManager := transaction.NewTxManager(db)
 
 	return &Storage{
-		Users:    data.NewUsersTestStorage(db),
+		Users:    data.NewUsersStorage(db),
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
 		Schedule: data.NewScheduleStorage(db),

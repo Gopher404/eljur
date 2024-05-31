@@ -7,7 +7,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
 )
+
+func startServer() {
+	cmd := exec.Command(".\\venv\\Scripts\\python.exe", "cmd/vk_token/main.py ")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	go func() {
+		if err := cmd.Run(); err != nil {
+			panic(err)
+		}
+	}()
+}
 
 func getVkToken(config config.VKSeverConfig) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("http://%s:%d/get_token", config.IP, config.Port))

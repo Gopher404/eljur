@@ -11,7 +11,7 @@ def get_token():
         driver.get("https://vk.com/")
         print("page tittle:", driver.title)
 
-        with open("../../vk_get_token/script.js") as f:
+        with open("vk_get_token/script.js") as f:
             script = f.read()
 
         print("execute js")

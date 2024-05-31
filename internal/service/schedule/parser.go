@@ -56,6 +56,9 @@ func (c *docsGetterWithCache) DocsGet(token string, groupId string) (*documentsR
 func newParser(api docsGetter, vkServerConf config.VKSeverConfig, cacheTTL time.Duration) *Parser {
 	pdf.DebugOn = true
 
+	startServer()
+	time.Sleep(time.Second)
+
 	parser := &Parser{
 		vkAPI:         newDocsWithCache(api, cacheTTL),
 		vkServerConf:  vkServerConf,

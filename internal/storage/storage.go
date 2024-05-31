@@ -70,7 +70,7 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 	txManager := transaction.NewTxManager(db)
 
 	return &Storage{
-		Users:    data.NewUsersStorage(db),
+		Users:    data.NewUsersTestStorage(db),
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
 		Schedule: data.NewScheduleStorage(db),

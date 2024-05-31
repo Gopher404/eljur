@@ -233,6 +233,7 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 		ch.Auditorium = sl[len(sl)-1]
 		s2 := sl[len(sl)-2]
 		if strings.Index(s2, "/") > -1 || (len(s2) < 4 && !isInits(s2)) {
+			sl = append(sl[:len(sl)-2], sl[len(sl)-1])
 			ch.Auditorium = s2 + ch.Auditorium
 		}
 		name2 := ""

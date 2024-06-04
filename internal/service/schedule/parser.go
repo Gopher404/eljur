@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -22,34 +23,35 @@ type docsGetter interface {
 func newDocsWithCache(api docsGetter, cacheTTL time.Duration) docsGetter {
 	docsGetrWithCache := &docsGetterWithCache{
 		api:   api,
-		cache: make(map[string]*documentsResp),
+		cache: sync.Map{},
 	}
 	go func() {
 		time.Sleep(cacheTTL)
-		for k := range docsGetrWithCache.cache {
-			delete(docsGetrWithCache.cache, k)
-		}
+		docsGetrWithCache.cache.Range(func(key any, _ any) (b bool) {
+			docsGetrWithCache.cache.Delete(key)
+			return
+		})
+
 	}()
 	return docsGetrWithCache
 }
 
 type docsGetterWithCache struct {
 	api   docsGetter
-	cache map[string]*documentsResp
+	cache sync.Map
 }
 
 func (c *docsGetterWithCache) DocsGet(token string, groupId string) (*documentsResp, error) {
-	resp, ok := c.cache[token+"&"+groupId]
+	v, ok := c.cache.Load(token + "&" + groupId)
 	if ok {
-		return resp, nil
+		return v.(*documentsResp), nil
 	}
 
 	resp, err := c.api.DocsGet(token, groupId)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-
-	c.cache[token+"&"+groupId] = resp
+	c.cache.Store(token+"&"+groupId, resp)
 	return resp, nil
 }
 

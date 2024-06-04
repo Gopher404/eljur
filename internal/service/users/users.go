@@ -37,6 +37,12 @@ func New(storage *storage.Storage, auth AuthService, grades GradesUser) *UserSer
 	}
 }
 
+const (
+	PermBlock int32 = iota
+	PermStudent
+	PermAdmin
+)
+
 type SaveUsersIn struct {
 	Action   string `json:"action"`
 	Id       int    `json:"id"`

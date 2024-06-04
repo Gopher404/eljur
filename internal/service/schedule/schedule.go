@@ -45,6 +45,24 @@ type Lesson struct {
 	IsChange   bool   `json:"is_change"`
 }
 
+type StructLessons struct {
+	Weeks [2]struct {
+		Days [6]struct {
+			Lessons []models.Lesson `json:"lessons"`
+		} `json:"days"`
+	} `json:"weeks"`
+}
+
+func NewStructLessons() *StructLessons {
+	ss := new(StructLessons)
+	for w := range ss.Weeks {
+		for d := range ss.Weeks[w].Days {
+			ss.Weeks[w].Days[d].Lessons = make([]models.Lesson, 0)
+		}
+	}
+	return ss
+}
+
 type DaySchedule struct {
 	WeekDay int8   `json:"week_day"`
 	Dates   string `json:"date"`
@@ -259,6 +277,9 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 			weekSchedule.Change(dayOfWeek.Num, ch)
 		}
 	}
+	if weekSchedule.CurrentDay == 6 {
+		weekSchedule.CurrentDay = 7
+	}
 	weekSchedule.sort()
 	if !multiErr.IsNil() {
 		return weekSchedule, nil
@@ -325,8 +346,8 @@ func (s *ScheduleService) Save(ctx context.Context, saveList []LessonToSave) err
 	return nil
 }
 
-func (s *ScheduleService) GetAll(ctx context.Context) (*models.StructLessons, error) {
-	ss := models.NewStructLessons()
+func (s *ScheduleService) GetAll(ctx context.Context) (*StructLessons, error) {
+	ss := NewStructLessons()
 
 	lessons, err := s.storage.Schedule.GetAll(ctx)
 	if err != nil {
@@ -340,7 +361,7 @@ func (s *ScheduleService) GetAll(ctx context.Context) (*models.StructLessons, er
 	return ss, nil
 }
 
-func sortStructLessons(ss *models.StructLessons) {
+func sortStructLessons(ss *StructLessons) {
 	for w := range ss.Weeks {
 		for d := range ss.Weeks[w].Days {
 			slices.SortFunc(ss.Weeks[w].Days[d].Lessons, func(a, b models.Lesson) int {

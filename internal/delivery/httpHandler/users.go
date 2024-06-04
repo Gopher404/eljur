@@ -1,7 +1,6 @@
-package httpServer
+package httpHandler
 
 import (
-	"eljur/internal/domain/models"
 	userService "eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"encoding/json"
@@ -24,7 +23,7 @@ func (h *Handler) setUsersEndpoints(rtr *mux.Router, url string) {
 }
 
 func (h *Handler) handleUsersGetAll(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, userService.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -43,7 +42,7 @@ func (h *Handler) handleUsersGetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleUsersSave(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, userService.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -65,7 +64,7 @@ func (h *Handler) handleUsersSave(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleUsersChangePassword(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, userService.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

@@ -1,8 +1,9 @@
-package httpServer
+package httpHandler
 
 import (
 	"eljur/internal/domain/models"
 	"eljur/internal/service/grades"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"encoding/json"
 	"github.com/gorilla/mux"
@@ -34,7 +35,7 @@ func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 }
 
 func (h *Handler) handleGradesSave(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -70,7 +71,7 @@ type getGradesByMonthAndSubjectOut struct {
 }
 
 func (h *Handler) handleGradesByMonthAndSubject(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -119,7 +120,7 @@ type getUserGradesByMonthIn struct {
 }
 
 func (h *Handler) handleGetUserGradesByMonth(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -156,7 +157,7 @@ type getResGradesBySubject struct {
 }
 
 func (h *Handler) handleGetResGradesBySubject(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -192,7 +193,7 @@ type getResUserGradesIn struct {
 }
 
 func (h *Handler) handleGetResUserGrades(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

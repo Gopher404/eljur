@@ -6,9 +6,3 @@ type User struct {
 	FullName string `json:"full_name"`
 	Group    int8   `json:"group"`
 }
-
-const (
-	PermBlock int32 = iota
-	PermStudent
-	PermAdmin
-)

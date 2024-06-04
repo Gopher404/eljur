@@ -42,6 +42,12 @@
         .day-name {
             font-size: large;
         }
+        @media (max-width: 480px) {
+            .schedule-wrap {
+                margin-left: 20px;
+            }
+        }
+
     </style>
     <title>Расписание</title>
 </head>
@@ -69,6 +75,7 @@
     <hr>
     <p id="day-6" class="day-name">Понедельник</p>
     <table id="tb-6"></table>
+    <div id="day-7" style="display: none"></div>
 </div>
 
 

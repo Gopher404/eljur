@@ -1,7 +1,8 @@
-package httpServer
+package httpHandler
 
 import (
 	"eljur/internal/domain/models"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -24,7 +25,7 @@ type StudentGradesTmpData struct {
 }
 
 func (h *Handler) handleStudentGrades(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -45,7 +46,7 @@ func (h *Handler) handleStudentGrades(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleStudentSchedule(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")

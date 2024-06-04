@@ -83,7 +83,7 @@ func (c *Client) ChangePassword(ctx context.Context, login string, newPassword s
 	return err
 }
 
-func (c *Client) ParseToken(ctx context.Context, token string) (login string, err error) {
+func (c *Client) ParseToken(ctx context.Context, token string) (string, error) {
 	req, err := c.authClient.ParseToken(ctx, &ssoV1.ParseTokenRequest{
 		AppKey: c.appKey,
 		Token:  token,

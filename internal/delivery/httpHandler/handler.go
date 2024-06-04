@@ -1,18 +1,25 @@
-package httpServer
+package httpHandler
 
 import (
+	"context"
 	"eljur/internal/pkg/metric"
 	"eljur/internal/service/grades"
 	schedules "eljur/internal/service/schedule"
 	"eljur/internal/service/subjects"
 	"eljur/internal/service/users"
-	"eljur/pkg/AuthClient"
 	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
 	"log/slog"
 	"net/http"
+	"time"
 )
+
+type AuthService interface {
+	ParseToken(ctx context.Context, token string) (string, error)
+	Login(ctx context.Context, login string, password string) (string, error)
+	GetPermission(ctx context.Context, login string) (int32, error)
+}
 
 type Handler struct {
 	l               *slog.Logger
@@ -20,7 +27,7 @@ type Handler struct {
 	usersService    *users.UserService
 	subjectService  *subjects.SubjectService
 	scheduleService *schedules.ScheduleService
-	auth            *AuthClient.Client
+	auth            AuthService
 }
 
 func NewHandler(l *slog.Logger,
@@ -28,7 +35,9 @@ func NewHandler(l *slog.Logger,
 	usersService *users.UserService,
 	subjectService *subjects.SubjectService,
 	scheduleService *schedules.ScheduleService,
-	auth *AuthClient.Client) *Handler {
+	auth AuthService,
+	timeOut time.Duration) *Handler {
+	TimeOut = timeOut
 	return &Handler{
 		l:               l,
 		gradesService:   gradesService,
@@ -38,6 +47,8 @@ func NewHandler(l *slog.Logger,
 		auth:            auth,
 	}
 }
+
+var TimeOut = time.Second * 10
 
 func (h *Handler) GetMuxRouter() *mux.Router {
 	rtr := mux.NewRouter()

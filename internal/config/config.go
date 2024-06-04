@@ -14,9 +14,9 @@ type Config struct {
 }
 
 type BindConfig struct {
-	Ip      string        `yaml:"ip"`
-	Port    string        `yaml:"port"`
-	TimeOut time.Duration `yaml:"time_out"`
+	Ip          string        `yaml:"ip"`
+	Port        string        `yaml:"port"`
+	HttpTimeOut time.Duration `yaml:"http_time_out"`
 }
 
 type DBConfig struct {

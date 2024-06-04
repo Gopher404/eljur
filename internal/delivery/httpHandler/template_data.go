@@ -1,8 +1,8 @@
-package httpServer
+package httpHandler
 
 import (
 	"context"
-	"eljur/internal/domain/models"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 )
 
@@ -35,7 +35,7 @@ func (h *Handler) SetHeaderData(ctx context.Context, headerData HeaderSetter, ac
 	}
 	headerData.setData(
 		"user-name", user.Name,
-		"is-admin", user.Perm >= models.PermAdmin,
+		"is-admin", user.Perm >= users.PermAdmin,
 	)
 
 	return nil

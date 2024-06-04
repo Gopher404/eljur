@@ -1,8 +1,8 @@
-package httpServer
+package httpHandler
 
 import (
-	"eljur/internal/domain/models"
 	"eljur/internal/service/schedule"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"encoding/json"
 	"github.com/gorilla/mux"
@@ -25,7 +25,7 @@ func (h *Handler) setScheduleEndpoints(rtr *mux.Router, url string) {
 }
 
 func (h *Handler) handleScheduleGetActual(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermStudent)
+	login, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -44,7 +44,7 @@ func (h *Handler) handleScheduleGetActual(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) handleScheduleGetAll(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermStudent)
+	_, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -64,7 +64,7 @@ func (h *Handler) handleScheduleGetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleScheduleSave(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

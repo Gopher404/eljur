@@ -290,6 +290,12 @@ func (g *GradeService) GetResultGradesByUser(ctx context.Context, login string, 
 	return res, nil
 }
 
+const (
+	GradeActionUpdate = int8(iota)
+	GradeActionDelete
+	GradeActionNew
+)
+
 func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) error {
 	ctx, err := g.storage.Tx.Begin(ctx)
 	if err != nil {
@@ -297,7 +303,7 @@ func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) e
 	}
 	for _, grade := range grades {
 		switch grade.Action {
-		case models.GradeActionNew:
+		case GradeActionNew:
 			if _, err := g.storage.Grades.NewGrade(ctx, &models.Grade{
 				UserId:    grade.UserId,
 				SubjectId: grade.SubjectId,
@@ -310,7 +316,7 @@ func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) e
 			}
 			break
 
-		case models.GradeActionUpdate:
+		case GradeActionUpdate:
 			if err := g.storage.Grades.Update(ctx, models.MinGrade{
 				Id:    grade.Id,
 				Value: grade.Value,
@@ -319,7 +325,7 @@ func (g *GradeService) Save(ctx context.Context, grades []*models.GradeToSave) e
 			}
 			break
 
-		case models.GradeActionDelete:
+		case GradeActionDelete:
 			if err := g.storage.Grades.Delete(ctx, grade.Id); err != nil {
 				return tr.Trace(err)
 			}

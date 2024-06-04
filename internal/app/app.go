@@ -2,6 +2,7 @@ package app
 
 import (
 	"eljur/internal/config"
+	"eljur/internal/delivery/httpHandler"
 	"eljur/internal/delivery/httpServer"
 	"eljur/internal/pkg/metric"
 	"eljur/internal/service/grades"
@@ -32,12 +33,13 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 
 	l.Info("setup services")
 
-	handler := httpServer.NewHandler(l,
+	handler := httpHandler.NewHandler(l,
 		gradesService,
 		usersService,
 		subjectsService,
 		scheduleService,
 		authClient,
+		cnf.Bind.HttpTimeOut,
 	)
 
 	server := httpServer.NewServer(handler.GetMuxRouter(), &cnf.Bind)

@@ -1,7 +1,7 @@
-package httpServer
+package httpHandler
 
 import (
-	"eljur/internal/domain/models"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"net/http"
 	"time"
@@ -54,7 +54,7 @@ func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		perm, err := h.auth.GetPermission(r.Context(), login)
-		if err != nil || perm < models.PermStudent {
+		if err != nil || perm < users.PermStudent {
 			h.renderTemplate(w, "Недостаточно прав", "login.html")
 			h.l.Warn(tr.Trace(err).Error())
 			return

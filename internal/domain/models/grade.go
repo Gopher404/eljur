@@ -1,11 +1,5 @@
 package models
 
-const (
-	GradeActionUpdate = int8(iota)
-	GradeActionDelete
-	GradeActionNew
-)
-
 type Grade struct {
 	Id        int    `json:"id"`
 	UserId    int    `json:"user_id"`

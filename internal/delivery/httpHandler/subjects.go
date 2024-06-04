@@ -1,8 +1,8 @@
-package httpServer
+package httpHandler
 
 import (
-	"eljur/internal/domain/models"
 	subjectsService "eljur/internal/service/subjects"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"encoding/json"
 	"github.com/gorilla/mux"
@@ -26,7 +26,7 @@ type getSubjectsBySemesterIn struct {
 }
 
 func (h *Handler) handleSubjectsGetBySemester(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermStudent)
+	_, ok := h.authenticate(r, users.PermStudent)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -55,7 +55,7 @@ func (h *Handler) handleSubjectsGetBySemester(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) handleSubjectsSave(w http.ResponseWriter, r *http.Request) {
-	_, ok := h.authenticate(r, models.PermAdmin)
+	_, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

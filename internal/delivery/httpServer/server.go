@@ -12,10 +12,7 @@ type HttpServer struct {
 	server *http.Server
 }
 
-var timeOut = time.Second * 10
-
 func NewServer(handler http.Handler, cnf *config.BindConfig) *HttpServer {
-	timeOut = cnf.TimeOut
 	return &HttpServer{
 		server: &http.Server{
 			Addr:    net.JoinHostPort(cnf.Ip, cnf.Port),

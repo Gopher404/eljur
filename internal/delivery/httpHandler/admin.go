@@ -1,8 +1,9 @@
-package httpServer
+package httpHandler
 
 import (
 	"eljur/internal/domain/models"
 	"eljur/internal/pkg/metric"
+	"eljur/internal/service/users"
 	"eljur/pkg/tr"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -43,7 +44,7 @@ type adminGradesTmpData struct {
 }
 
 func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -66,7 +67,7 @@ func (h *Handler) handleAdminGrades(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -81,7 +82,7 @@ func (h *Handler) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAdminSubjects(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -101,7 +102,7 @@ type metricTmpData struct {
 }
 
 func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -125,7 +126,7 @@ func (h *Handler) handleAdminMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAdminMetricXLSX(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")
@@ -142,7 +143,7 @@ func (h *Handler) handleAdminMetricXLSX(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) handleAdminSchedule(w http.ResponseWriter, r *http.Request) {
-	login, ok := h.authenticate(r, models.PermAdmin)
+	login, ok := h.authenticate(r, users.PermAdmin)
 	if !ok {
 		h.l.Info(fmt.Sprintf("unauthorized user %s", login))
 		redirect(w, "/login")

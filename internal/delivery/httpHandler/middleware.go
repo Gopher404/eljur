@@ -1,4 +1,4 @@
-package httpServer
+package httpHandler
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 
 func (h *Handler) mw(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+		ctx, cancel := context.WithTimeout(context.Background(), TimeOut)
 		defer cancel()
 
 		r = r.WithContext(ctx)

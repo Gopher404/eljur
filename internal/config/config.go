@@ -21,12 +21,13 @@ type BindConfig struct {
 }
 
 type DBConfig struct {
-	Driver   string `yaml:"driver"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Schema   string `yaml:"schema"`
+	Driver          string `yaml:"driver"`
+	Host            string `yaml:"host"`
+	Port            string `yaml:"port"`
+	User            string `yaml:"user"`
+	Password        string `yaml:"password"`
+	Schema          string `yaml:"schema"`
+	FileStoragePath string `yaml:"file_storage_path"`
 }
 
 type SSOConfig struct {

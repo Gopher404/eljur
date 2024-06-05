@@ -3,6 +3,7 @@ package httpHandler
 import (
 	"context"
 	"eljur/internal/pkg/metric"
+	"eljur/internal/service/files"
 	"eljur/internal/service/grades"
 	schedules "eljur/internal/service/schedule"
 	"eljur/internal/service/subjects"
@@ -27,6 +28,7 @@ type Handler struct {
 	usersService    *users.UserService
 	subjectService  *subjects.SubjectService
 	scheduleService *schedules.ScheduleService
+	fileService     *files.FileService
 	auth            AuthService
 }
 
@@ -35,6 +37,7 @@ func NewHandler(l *slog.Logger,
 	usersService *users.UserService,
 	subjectService *subjects.SubjectService,
 	scheduleService *schedules.ScheduleService,
+	fileService *files.FileService,
 	auth AuthService,
 	timeOut time.Duration) *Handler {
 	TimeOut = timeOut
@@ -44,6 +47,7 @@ func NewHandler(l *slog.Logger,
 		usersService:    usersService,
 		subjectService:  subjectService,
 		scheduleService: scheduleService,
+		fileService:     fileService,
 		auth:            auth,
 	}
 }
@@ -68,6 +72,7 @@ func (h *Handler) setEndpoints(rtr *mux.Router) {
 	h.setUsersEndpoints(rtr, "/users")
 	h.setSubjectsEndpoints(rtr, "/subjects")
 	h.setScheduleEndpoints(rtr, "/schedule")
+	h.setFilesEndpoints(rtr, "/files")
 }
 
 type Message struct {

@@ -6,6 +6,7 @@ import (
 	"eljur/internal/delivery/httpHandler"
 	"eljur/internal/delivery/httpServer"
 	"eljur/internal/pkg/metric"
+	"eljur/internal/service/files"
 	"eljur/internal/service/grades"
 	"eljur/internal/service/schedule"
 	"eljur/internal/service/subjects"
@@ -33,6 +34,7 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 	subjectsService := subjects.New(s, gradesService)
 	usersService := users.New(s, authClient, gradesService)
 	scheduleService := schedules.New(s, s.Users, scheduleChanges, cnf.Schedule)
+	fileService := files.New(s.Files)
 
 	l.Info("setup services")
 
@@ -41,6 +43,7 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 		usersService,
 		subjectsService,
 		scheduleService,
+		fileService,
 		authClient,
 		cnf.Bind.HttpTimeOut,
 	)

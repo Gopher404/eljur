@@ -2,6 +2,7 @@
 .git
 venv
 config
+files
 **/__pycache__
 log.json
 internal/storage/mysql/test_users.go

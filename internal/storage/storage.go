@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"eljur/internal/config"
 	"eljur/internal/domain/models"
+	"eljur/internal/storage/file"
 	data "eljur/internal/storage/mysql"
 	"eljur/internal/storage/transaction"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"io"
 )
 
 type Users interface {
@@ -50,11 +52,19 @@ type Schedule interface {
 	Delete(ctx context.Context, id int) error
 }
 
+type Files interface {
+	Get(path string) (*models.File, error)
+	ListDir(path string) ([]models.FileInfo, error)
+	Save(path string, data io.Reader) error
+	CreateDir(path string) error
+}
+
 type Storage struct {
 	Users    Users
 	Grades   Grades
 	Subjects Subjects
 	Schedule Schedule
+	Files    Files
 	Tx       *transaction.TxManager
 }
 
@@ -74,6 +84,7 @@ func New(cnf *config.DBConfig) (*Storage, error) {
 		Grades:   data.NewGradesStorage(db),
 		Subjects: data.NewSubjectsStorage(db),
 		Schedule: data.NewScheduleStorage(db),
+		Files:    file.NewFilesStorage(cnf.FileStoragePath),
 		Tx:       txManager,
 	}, nil
 }

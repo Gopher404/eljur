@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := logger.SetupLogger(&cnf.Log)
+	l, err := logger.SetupLogger(cnf.Log)
 	if err != nil {
 		panic(err)
 	}

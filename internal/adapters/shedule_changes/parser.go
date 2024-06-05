@@ -1,8 +1,9 @@
-package schedules
+package schedule_changes
 
 import (
 	"bytes"
 	"eljur/internal/config"
+	"eljur/internal/domain/models"
 	"eljur/pkg/tr"
 	"fmt"
 	"github.com/ledongthuc/pdf"
@@ -17,7 +18,7 @@ import (
 )
 
 type docsGetter interface {
-	DocsGet(token string, groupId string) (*documentsResp, error)
+	DocsGet(token string) (*models.DocumentsResp, error)
 }
 
 func newDocsWithCache(api docsGetter, cacheTTL time.Duration) docsGetter {
@@ -41,40 +42,41 @@ type docsGetterWithCache struct {
 	cache sync.Map
 }
 
-func (c *docsGetterWithCache) DocsGet(token string, groupId string) (*documentsResp, error) {
-	v, ok := c.cache.Load(token + "&" + groupId)
+func (c *docsGetterWithCache) DocsGet(token string) (*models.DocumentsResp, error) {
+	v, ok := c.cache.Load(token)
 	if ok {
-		return v.(*documentsResp), nil
+		return v.(*models.DocumentsResp), nil
 	}
-
-	resp, err := c.api.DocsGet(token, groupId)
+	resp, err := c.api.DocsGet(token)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	c.cache.Store(token+"&"+groupId, resp)
+	c.cache.Store(token, resp)
 	return resp, nil
 }
 
-func newParser(api docsGetter, vkServerConf config.VKSeverConfig, cacheTTL time.Duration) *Parser {
+func NewParser(cnf *config.ScheduleChangesConfig) *Parser {
 	pdf.DebugOn = true
 
 	startServer()
 	time.Sleep(time.Second)
 
+	vkApi := newVKAPI(cnf.VKAPI)
+
 	parser := &Parser{
-		vkAPI:         newDocsWithCache(api, cacheTTL),
-		vkServerConf:  vkServerConf,
+		vkAPI:         newDocsWithCache(vkApi, cnf.CacheTTL),
+		vkServerConf:  cnf.VKSever,
 		documentCache: make(map[string]string),
 	}
 	go func() {
 		for {
-			time.Sleep(cacheTTL)
+			time.Sleep(cnf.CacheTTL)
 			for _, k := range parser.documentCache {
 				delete(parser.documentCache, k)
 			}
 		}
 	}()
-	token, _ := getVkToken(vkServerConf)
+	token, _ := getVkToken(cnf.VKSever)
 	parser.token = token
 	return parser
 }
@@ -90,8 +92,8 @@ func newVkErr(status int, msg string) error {
 	return fmt.Errorf("vk error: code %d msg %s", status, msg)
 }
 
-func (p *Parser) getListDocuments(groupId string) ([]*documentInfo, error) {
-	resp, err := p.vkAPI.DocsGet(p.token, groupId)
+func (p *Parser) GetListDocuments() ([]*models.DocumentInfo, error) {
+	resp, err := p.vkAPI.DocsGet(p.token)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -109,7 +111,7 @@ func (p *Parser) getListDocuments(groupId string) ([]*documentInfo, error) {
 			return nil, tr.Trace(newVkErr(resp.Error.Code, resp.Error.Msg))
 		}
 	}
-	resp, err = p.vkAPI.DocsGet(p.token, groupId)
+	resp, err = p.vkAPI.DocsGet(p.token)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
@@ -119,7 +121,9 @@ func (p *Parser) getListDocuments(groupId string) ([]*documentInfo, error) {
 	return resp.Response.Items, nil
 }
 
-func (*Parser) getDateFromDocInfo(docInfo *documentInfo) (time.Time, bool) {
+const dateLayout = "02.01.2006"
+
+func (*Parser) GetDateFromDocInfo(docInfo *models.DocumentInfo) (time.Time, bool) {
 	lensDigit := []int{0, 1, 3, 4, 6, 7, 8, 9}
 	lensDot := []int{2, 5}
 	dateS := ""
@@ -150,7 +154,7 @@ func (*Parser) getDateFromDocInfo(docInfo *documentInfo) (time.Time, bool) {
 	return date, true
 }
 
-func (*Parser) getWeekFromDocument(doc string) string {
+func (*Parser) GetWeekFromDocument(doc string) string {
 	const searchText = "("
 	idx := strings.Index(doc, searchText)
 
@@ -173,15 +177,8 @@ func (*Parser) getWeekFromDocument(doc string) string {
 	return strings.ToLower(strings.ReplaceAll(res, " ", ""))
 }
 
-type change struct {
-	Number     int8
-	Auditorium string
-	Name       string
-	Teacher    string
-}
-
-func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
-	var changes []change
+func (p *Parser) GetChangesFromDocument(doc string, groupName string) []models.Change {
+	var changes []models.Change
 	//var stringChanges []string
 	c := strings.Count(doc, groupName)
 	for i := 0; i < c; i++ {
@@ -210,7 +207,7 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 		}
 		stringChange = strings.Trim(stringChange, " ")
 
-		var ch change
+		var ch models.Change
 
 		number, _ := strconv.Atoi(string(stringChange[0]))
 		ch.Number = int8(number)
@@ -282,7 +279,7 @@ func (p *Parser) getChangesFromDocument(doc string, groupName string) []change {
 	return changes
 }
 
-func (p *Parser) getDocument(docInfo *documentInfo) (string, error) {
+func (p *Parser) GetDocument(docInfo *models.DocumentInfo) (string, error) {
 	docS, ok := p.documentCache[docInfo.Url]
 	if ok {
 		return docS, nil

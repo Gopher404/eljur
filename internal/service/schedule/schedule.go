@@ -17,23 +17,27 @@ type UserGroupGetter interface {
 	GetGroup(ctx context.Context, login string) (int8, error)
 }
 
+type ChangesParser interface {
+	GetListDocuments() ([]*models.DocumentInfo, error)
+	GetDocument(docInfo *models.DocumentInfo) (string, error)
+	GetDateFromDocInfo(docInfo *models.DocumentInfo) (time.Time, bool)
+	GetWeekFromDocument(doc string) string
+	GetChangesFromDocument(doc string, groupName string) []models.Change
+}
+
 type ScheduleService struct {
 	storage   *storage.Storage
-	parser    *Parser
+	parser    ChangesParser
 	groupName string
-	ownerId   string
 	user      UserGroupGetter
 }
 
-func New(storage *storage.Storage, user UserGroupGetter, config *config.ScheduleConfig) *ScheduleService {
-	vk := newVKAPI(config.VKAPI.Version)
-	parser := newParser(vk, config.VKSever, config.VKAPI.CacheTTL)
+func New(storage *storage.Storage, user UserGroupGetter, parser ChangesParser, cnf *config.ScheduleConfig) *ScheduleService {
 	return &ScheduleService{
 		storage:   storage,
 		user:      user,
 		parser:    parser,
-		groupName: config.GroupName,
-		ownerId:   config.VKAPI.GroupId,
+		groupName: cnf.GroupName,
 	}
 }
 
@@ -113,7 +117,7 @@ func (s *WeekSchedule) addLessons(lessons []models.Lesson, userGroup int8) {
 	}
 }
 
-func (s *WeekSchedule) Change(dayN int8, ch change) {
+func (s *WeekSchedule) Change(dayN int8, ch models.Change) {
 	if s == nil {
 		return
 	}
@@ -186,13 +190,13 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 		timeToGetDoc = now.Add(-1 * time.Hour * 24)
 	}
 
-	docsInf, err := s.parser.getListDocuments(s.ownerId)
+	docsInf, err := s.parser.GetListDocuments()
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
 
 	date := timeToGetDoc.Format(dateLayout)
-	var nowDocInf *documentInfo
+	var nowDocInf *models.DocumentInfo
 	for _, docInf := range docsInf {
 		if strings.Index(docInf.Title, date) > -1 {
 			nowDocInf = docInf
@@ -202,11 +206,11 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 		return nil, tr.Trace(errors.New("document not found"))
 	}
 
-	nowDoc, err := s.parser.getDocument(nowDocInf)
+	nowDoc, err := s.parser.GetDocument(nowDocInf)
 	if err != nil {
 		return nil, tr.Trace(err)
 	}
-	week := s.parser.getWeekFromDocument(nowDoc)
+	week := s.parser.GetWeekFromDocument(nowDoc)
 	var weekN int8
 	if week == "числитель" {
 		weekN = 0
@@ -253,7 +257,7 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 		if docInf.Ext != "pdf" {
 			continue
 		}
-		date, ok := s.parser.getDateFromDocInfo(docInf)
+		date, ok := s.parser.GetDateFromDocInfo(docInf)
 		if !ok {
 			continue
 		}
@@ -266,13 +270,13 @@ func (s *ScheduleService) GetActualSchedule(ctx context.Context, login string) (
 			dayOfWeek = WeekDay{"Понедельник", 6}
 		}
 
-		doc, err := s.parser.getDocument(docInf)
+		doc, err := s.parser.GetDocument(docInf)
 		if err != nil {
 			multiErr.AddError(err)
 			continue
 		}
 
-		changes := s.parser.getChangesFromDocument(doc, s.groupName)
+		changes := s.parser.GetChangesFromDocument(doc, s.groupName)
 		for _, ch := range changes {
 			weekSchedule.Change(dayOfWeek.Num, ch)
 		}

@@ -1,4 +1,4 @@
-package schedules
+package schedule_changes
 
 import (
 	"eljur/internal/config"
@@ -10,31 +10,31 @@ import (
 func TestGetWeekFromDocument(t *testing.T) {
 	cnf, err := config.GetConfig("C:\\Users\\79212\\GolandProjects\\eljur\\config\\config.yaml")
 	fmt.Printf("%+v", cnf)
-	api := newVKAPI(cnf.Schedule.VKAPI.Version)
-	p := newParser(api, cnf.Schedule.VKSever, cnf.Schedule.VKAPI.CacheTTL)
 
-	docsInf, err := p.getListDocuments(cnf.Schedule.VKAPI.GroupId)
+	p := NewParser(cnf.ScheduleChanges)
+
+	docsInf, err := p.GetListDocuments()
 	require.NoError(t, err)
 
-	doc, err := p.getDocument(docsInf[0])
+	doc, err := p.GetDocument(docsInf[0])
 	require.NoError(t, err)
 
-	week := p.getWeekFromDocument(doc)
+	week := p.GetWeekFromDocument(doc)
 	fmt.Println(week)
 }
 
 func TestGetChangesFromDocument(t *testing.T) {
 	cnf, err := config.GetConfig("C:\\Users\\79212\\GolandProjects\\eljur\\config\\config.yaml")
 	fmt.Printf("%+v", cnf)
-	api := newVKAPI(cnf.Schedule.VKAPI.Version)
-	p := newParser(api, cnf.Schedule.VKSever, cnf.Schedule.VKAPI.CacheTTL)
 
-	docsInf, err := p.getListDocuments(cnf.Schedule.VKAPI.GroupId)
+	p := NewParser(cnf.ScheduleChanges)
+
+	docsInf, err := p.GetListDocuments()
 	require.NoError(t, err)
 
-	doc, err := p.getDocument(docsInf[0])
+	doc, err := p.GetDocument(docsInf[0])
 	require.NoError(t, err)
 
-	ch := p.getChangesFromDocument(doc, cnf.Schedule.GroupName)
+	ch := p.GetChangesFromDocument(doc, cnf.Schedule.GroupName)
 	fmt.Println(ch)
 }

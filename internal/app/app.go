@@ -1,6 +1,7 @@
 package app
 
 import (
+	schedule_changes "eljur/internal/adapters/shedule_changes"
 	"eljur/internal/config"
 	"eljur/internal/delivery/httpHandler"
 	"eljur/internal/delivery/httpServer"
@@ -15,7 +16,7 @@ import (
 )
 
 func Run(cnf *config.Config, l *slog.Logger) error {
-	s, err := storage.New(&cnf.DB)
+	s, err := storage.New(cnf.DB)
 	if err != nil {
 		return err
 	}
@@ -26,10 +27,12 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 		return err
 	}
 
+	scheduleChanges := schedule_changes.NewParser(cnf.ScheduleChanges)
+
 	gradesService := grades.New(s)
 	subjectsService := subjects.New(s, gradesService)
 	usersService := users.New(s, authClient, gradesService)
-	scheduleService := schedules.New(s, s.Users, &cnf.Schedule)
+	scheduleService := schedules.New(s, s.Users, scheduleChanges, cnf.Schedule)
 
 	l.Info("setup services")
 
@@ -42,7 +45,7 @@ func Run(cnf *config.Config, l *slog.Logger) error {
 		cnf.Bind.HttpTimeOut,
 	)
 
-	server := httpServer.NewServer(handler.GetMuxRouter(), &cnf.Bind)
+	server := httpServer.NewServer(handler.GetMuxRouter(), cnf.Bind)
 
 	metric.CountRPS()
 

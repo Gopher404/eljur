@@ -1,4 +1,4 @@
-package schedules
+package schedule_changes
 
 import (
 	"eljur/internal/config"

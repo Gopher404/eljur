@@ -6,11 +6,12 @@ import (
 )
 
 type Config struct {
-	Bind     BindConfig     `yaml:"bind"`
-	DB       DBConfig       `yaml:"DB"`
-	SSO      SSOConfig      `yaml:"SSO"`
-	Log      LogConfig      `yaml:"log"`
-	Schedule ScheduleConfig `yaml:"schedule"`
+	Bind            *BindConfig            `yaml:"bind"`
+	DB              *DBConfig              `yaml:"DB"`
+	SSO             *SSOConfig             `yaml:"SSO"`
+	Log             *LogConfig             `yaml:"log"`
+	Schedule        *ScheduleConfig        `yaml:"schedule"`
+	ScheduleChanges *ScheduleChangesConfig `yaml:"schedule_changes"`
 }
 
 type BindConfig struct {
@@ -46,15 +47,18 @@ type VKSeverConfig struct {
 }
 
 type VKAPIConfig struct {
-	Version  string        `yaml:"version"`
-	GroupId  string        `yaml:"group_id"`
-	CacheTTL time.Duration `yaml:"cache_TTL"`
+	Version string `yaml:"version"`
+	GroupId string `yaml:"group_id"`
 }
 
 type ScheduleConfig struct {
-	GroupName string        `yaml:"group_name"`
-	VKSever   VKSeverConfig `yaml:"vk_server"`
-	VKAPI     VKAPIConfig   `yaml:"vk_api"`
+	GroupName string `yaml:"group_name"`
+}
+
+type ScheduleChangesConfig struct {
+	CacheTTL time.Duration `yaml:"cache_TTL"`
+	VKSever  VKSeverConfig `yaml:"vk_server"`
+	VKAPI    VKAPIConfig   `yaml:"vk_api"`
 }
 
 func GetConfig(path string) (*Config, error) {

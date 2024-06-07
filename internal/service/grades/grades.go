@@ -24,9 +24,21 @@ type MinGradeWithDay struct {
 	Day   int8   `json:"day"`
 }
 
+type MinGradeWithDayAndMonth struct {
+	Id    int    `json:"id"`
+	Value string `json:"value"`
+	Day   int8   `json:"day"`
+	Month int8   `json:"month"`
+}
+
 type UserGradesByMonth struct {
 	SubjectsNames []string            `json:"subject_names"`
 	Grades        [][]MinGradeWithDay `json:"grades"`
+}
+
+type UserGradesBySemester struct {
+	SubjectsNames []string                    `json:"subject_names"`
+	Grades        [][]MinGradeWithDayAndMonth `json:"grades"`
 }
 
 type SubjectGradesByMonth struct {
@@ -83,6 +95,63 @@ func (g *GradeService) GetUserGradesByMonth(ctx context.Context, login string, m
 				Id:    grade.Id,
 				Value: grade.Value,
 				Day:   grade.Day,
+			})
+		}
+		userGradesByMonth.Grades = append(userGradesByMonth.Grades, newGradesSlice)
+	}
+
+	return &userGradesByMonth, nil
+}
+
+func (g *GradeService) GetUserGradesBySemester(ctx context.Context, login string, semester int8, course int8) (*UserGradesBySemester, error) {
+	userId, err := g.storage.Users.GetId(ctx, login)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	subjects, err := g.storage.Subjects.GetBySemester(ctx, semester, course)
+	if err != nil {
+		return nil, tr.Trace(err)
+	}
+
+	var (
+		startMonth, endMonth int8
+	)
+	if semester == 1 {
+		startMonth = 9
+		endMonth = 12
+	} else {
+		startMonth = 1
+		endMonth = 6
+	}
+
+	var userGradesByMonth UserGradesBySemester
+
+	for _, subject := range subjects {
+		userGradesByMonth.SubjectsNames = append(userGradesByMonth.SubjectsNames, subject.Name)
+		var grades []*models.Grade
+
+		for month := startMonth; month <= endMonth; month++ {
+			monthGrades, err := g.storage.Grades.Find(ctx, models.GradesFindOpts{
+				UserId:    &userId,
+				SubjectId: &subject.Id,
+				Month:     &month,
+				Course:    &course,
+			})
+			if err != nil {
+				return nil, tr.Trace(err)
+			}
+
+			grades = append(grades, monthGrades...)
+		}
+
+		newGradesSlice := make([]MinGradeWithDayAndMonth, 0)
+		for _, grade := range grades {
+			newGradesSlice = append(newGradesSlice, MinGradeWithDayAndMonth{
+				Id:    grade.Id,
+				Value: grade.Value,
+				Day:   grade.Day,
+				Month: grade.Month,
 			})
 		}
 		userGradesByMonth.Grades = append(userGradesByMonth.Grades, newGradesSlice)

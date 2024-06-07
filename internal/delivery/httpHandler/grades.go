@@ -24,6 +24,10 @@ func (h *Handler) setGradesEndpoints(rtr *mux.Router, url string) {
 		h.mw(h.handleGetUserGradesByMonth),
 	).Methods("POST")
 
+	rtr.HandleFunc(url+"/by_semester_and_user",
+		h.mw(h.handleGetUserGradesBySemester),
+	).Methods("POST")
+
 	rtr.HandleFunc(url+"/res_by_subject",
 		h.mw(h.handleGetResGradesBySubject),
 	).Methods("POST")
@@ -138,6 +142,43 @@ func (h *Handler) handleGetUserGradesByMonth(w http.ResponseWriter, r *http.Requ
 	}
 
 	out, err := h.gradesService.GetUserGradesByMonth(r.Context(), login, in.Month, in.Course)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(out)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(resp)
+}
+
+type getUserGradesBySemesterIn struct {
+	Semester int8 `json:"semester"`
+	Course   int8 `json:"course"`
+}
+
+func (h *Handler) handleGetUserGradesBySemester(w http.ResponseWriter, r *http.Request) {
+	login, ok := h.authenticate(r, users.PermStudent)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+	var in getUserGradesBySemesterIn
+	if err := json.Unmarshal(body, &in); err != nil {
+		h.httpErr(w, tr.Trace(err), http.StatusBadRequest)
+		return
+	}
+
+	out, err := h.gradesService.GetUserGradesBySemester(r.Context(), login, in.Semester, in.Course)
 	if err != nil {
 		h.httpErr(w, tr.Trace(err), http.StatusInternalServerError)
 		return

@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="/static/js/functions.js"></script>
     <script src="/static/js/cookie.min.js"></script>
     <title>Оценки</title>
@@ -102,26 +101,30 @@
 <div class="btn-group" role="group" id="courses-btn-group"></div>
 
 <script>
-    const MonthsNames = {
-        9: "Сентябрь",
-        10: "Октябрь",
-        11: "Ноябрь",
-        12: "Декабрь",
-        1: "Январь",
-        2: "Февраль",
-        3: "Март",
-        4: "Апрель",
-        5: "Май",
-        6: "Июнь",
-        100: "ИТОГ"
-    };
     const CoursesRims = {
         1: "&#8544",
         2: "&#8545",
         3: "&#8546",
         4: "&#8547",
     }
-    const months = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 100]
+
+    const MonthsNames = {
+        9: "Сентябрь",
+        10: "Октябрь",
+        11: "Ноябрь",
+        12: "Декабрь",
+        101: CoursesRims[1] + " семестр",
+        1: "Январь",
+        2: "Февраль",
+        3: "Март",
+        4: "Апрель",
+        5: "Май",
+        6: "Июнь",
+        102: CoursesRims[2] + " семестр",
+        100: "ИТОГ"
+    };
+
+    const months = [9, 10, 11, 12, 101, 1, 2, 3, 4, 5, 6, 102, 100]
 
     let group = document.getElementById("courses-btn-group");
     for (let course = 1; course <= 4 ; course++) {
@@ -180,9 +183,12 @@
         grades_wrap.innerHTML = ""
         spinner_wrap.innerHTML = spinner_html
 
+        let url = month > 100? "/grades/by_semester_and_user": "/grades/by_month_and_user";
+        let data = month > 100? {"semester": month-100, "course": course}: {"month": month, "course": course}
+
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/grades/by_month_and_user");
-        xhr.send(JSON.stringify({"month": month, "course": course}));
+        xhr.open("POST", url);
+        xhr.send(JSON.stringify(data));
         xhr.responseType = "json";
         xhr.onload = () => {
             spinner_wrap.innerHTML = ""
@@ -271,6 +277,7 @@
         div.classList.add("grade-el");
 
         div.style.color = getGradeColor(grade.value);
+        if (grade.month !== undefined) month = grade.month;
         div.innerHTML = `<p class="fw-normal mp-0">${formatDate(month, grade.day)}</p><p class="fw-semibold fs-5 mp-0">${grade.value}</p>`;
         return div;
     }
@@ -383,4 +390,5 @@
 
     SelectGrades(course, month)
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </html>
